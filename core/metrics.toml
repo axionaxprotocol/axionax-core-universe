@@ -1,0 +1,164 @@
+# Metrics Configuration for AxionAx Protocol
+
+[metrics]
+# Enable metrics collection
+enabled = true
+
+# Metrics server port
+port = 9090
+
+# Metrics endpoint path
+path = "/metrics"
+
+# Metrics format (prometheus, json)
+format = "prometheus"
+
+# Update interval (seconds)
+interval = 15
+
+[metrics.blockchain]
+# Block production metrics
+blocks_produced = true
+block_time = true
+block_size = true
+block_gas_used = true
+
+# Transaction metrics
+transactions_processed = true
+transactions_pending = true
+transaction_throughput = true
+transaction_latency = true
+
+# State metrics
+state_size = true
+state_transitions = true
+
+[metrics.consensus]
+# Validator metrics
+validator_count = true
+validator_uptime = true
+validator_participation = true
+
+# Consensus metrics
+consensus_rounds = true
+consensus_latency = true
+finality_time = true
+
+# PoPC specific metrics
+probabilistic_checks = true
+challenge_responses = true
+verification_success_rate = true
+
+[metrics.network]
+# Peer metrics
+peer_count = true
+peer_connections = true
+peer_bandwidth = true
+
+# Network metrics
+messages_sent = true
+messages_received = true
+network_latency = true
+bandwidth_usage = true
+
+# Gossip protocol metrics
+gossip_messages = true
+message_propagation_time = true
+
+[metrics.rpc]
+# Request metrics
+requests_total = true
+requests_per_method = true
+request_latency = true
+request_errors = true
+
+# Response metrics
+response_time = true
+response_size = true
+
+# Rate limiting
+rate_limit_hits = true
+
+[metrics.deai]
+# Worker metrics
+registered_workers = true
+active_workers = true
+worker_uptime = true
+worker_performance = true
+
+# Task metrics
+tasks_submitted = true
+tasks_completed = true
+tasks_failed = true
+task_latency = true
+
+# ASR metrics
+selection_time = true
+routing_efficiency = true
+
+[metrics.system]
+# Resource usage
+cpu_usage = true
+memory_usage = true
+disk_usage = true
+disk_io = true
+
+# Process metrics
+goroutines = true  # For Go components
+threads = true
+open_files = true
+
+[metrics.database]
+# Query metrics
+query_count = true
+query_latency = true
+slow_queries = true
+
+# Connection metrics
+active_connections = true
+connection_errors = true
+
+# Cache metrics
+cache_hits = true
+cache_misses = true
+cache_size = true
+
+[metrics.security]
+# Security events
+failed_auth_attempts = true
+rate_limit_violations = true
+suspicious_activities = true
+
+# Audit trail
+critical_operations = true
+
+[metrics.performance]
+# Throughput
+tps_current = true
+tps_peak = true
+tps_average = true
+
+# Latency percentiles
+latency_p50 = true
+latency_p95 = true
+latency_p99 = true
+
+[metrics.alerts]
+# Enable alerting integration
+enabled = true
+
+# Alert thresholds
+high_latency_ms = 1000
+high_error_rate = 5.0
+low_peer_count = 10
+high_cpu_usage = 80.0
+high_memory_usage = 85.0
+low_disk_space_gb = 50
+
+[metrics.labels]
+# Additional labels for all metrics
+environment = "testnet"
+chain_id = "86137"
+version = "1.9.0"
+node_type = "validator"  # validator, rpc, archive
+region = "auto"  # Detect or configure

@@ -1,0 +1,8 @@
+{
+  "chainId": "0x21A7",
+  "chainName": "axionax Mainnet",
+  "nativeCurrency": { "name": "AXX", "symbol": "AXX", "decimals": 18 },
+  "rpcUrls": ["https://rpc.axionax.org"],
+  "blockExplorerUrls": ["https://explorer.axionax.org"],
+  "iconUrls": ["https://assets.axionax.org/axx-logo.png"]
+}

@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # axionax protocol Node
+  node:
+    build:
+      context: ../axionax-core
+      dockerfile: Dockerfile
+    container_name: axionax-node
+    ports:
+      - "26656:26656"  # P2P
+      - "26657:26657"  # RPC
+      - "9090:9090"    # gRPC
+    volumes:
+      - node-data:/data
+    environment:
+      - RUST_LOG=info
+    restart: unless-stopped
+
+  # Explorer (optional)
+  explorer:
+    build:
+      context: ../axionax-web
+      dockerfile: Dockerfile
+    container_name: axionax-explorer
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_RPC_URL=http://node:26657
+    depends_on:
+      - node
+    restart: unless-stopped
+
+volumes:
+  node-data:
+    driver: local

@@ -1,0 +1,108 @@
+# Prometheus Configuration for AxionAx Protocol Monitoring
+
+global:
+  scrape_interval: 15s       # Scrape targets every 15 seconds
+  evaluation_interval: 15s   # Evaluate rules every 15 seconds
+  external_labels:
+    cluster: 'axionax-testnet'
+    environment: 'testnet'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  # - "alerts/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # AxionAx Core Node Metrics
+  - job_name: 'axionax-core'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'blockchain-node'
+          node_type: 'validator'
+    
+    metric_relabel_configs:
+      # Keep only relevant metrics
+      - source_labels: [__name__]
+        regex: 'axionax_.*|consensus_.*|blockchain_.*'
+        action: keep
+
+  # RPC Endpoint Metrics
+  - job_name: 'axionax-rpc'
+    static_configs:
+      - targets: ['localhost:8545']
+        labels:
+          service: 'rpc-server'
+    
+    metrics_path: '/metrics'
+    
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'rpc_.*|http_.*'
+        action: keep
+
+  # P2P Network Metrics
+  - job_name: 'axionax-p2p'
+    static_configs:
+      - targets: ['localhost:30303']
+        labels:
+          service: 'p2p-network'
+    
+    metrics_path: '/metrics'
+
+  # PostgreSQL Database Metrics
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['localhost:9187']
+        labels:
+          service: 'database'
+
+  # Redis Metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['localhost:9121']
+        labels:
+          service: 'cache'
+
+  # Node Exporter (System Metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']
+        labels:
+          service: 'system'
+
+  # Docker Container Metrics
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['localhost:9323']
+        labels:
+          service: 'containers'
+
+  # DeAI Worker Nodes
+  - job_name: 'deai-workers'
+    static_configs:
+      - targets: []  # Add worker endpoints dynamically
+        labels:
+          service: 'deai-worker'
+
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus/data
+    retention:
+      time: 30d       # Keep data for 30 days
+      size: 10GB      # Maximum 10GB storage
+
+# Remote write (optional - for long-term storage)
+# remote_write:
+#   - url: "https://prometheus-remote-write.example.com/api/v1/write"
+#     basic_auth:
+#       username: axionax
+#       password: <password>

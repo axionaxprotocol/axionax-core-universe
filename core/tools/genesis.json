@@ -1,0 +1,117 @@
+{
+  "config": {
+    "chainId": 86137,
+    "homesteadBlock": 0,
+    "eip150Block": 0,
+    "eip155Block": 0,
+    "eip158Block": 0,
+    "byzantiumBlock": 0,
+    "constantinopleBlock": 0,
+    "petersburgBlock": 0,
+    "istanbulBlock": 0,
+    "berlinBlock": 0,
+    "londonBlock": 0,
+    "axionax": {
+      "consensus": "popc",
+      "blockTime": 5,
+      "epochLength": 100,
+      "minValidatorStake": "10000000000000000000000",
+      "maxValidators": 100,
+      "slashingRate": 0.1,
+      "falsPassPenalty": 500
+    }
+  },
+  "nonce": "0x0",
+  "timestamp": "0x6919ab07",
+  "extraData": "0x",
+  "gasLimit": "0x1c9c380",
+  "difficulty": "0x1",
+  "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "coinbase": "0x0000000000000000000000000000000000000000",
+  "validators": [
+    {
+      "address": "0x0000000000000000000000000000000000000001",
+      "name": "Validator-SG-01",
+      "stake": "50000000000000000000000",
+      "commission": 0.1,
+      "enode": "enode://WILL_BE_GENERATED@217.216.109.5:30303",
+      "active": true
+    },
+    {
+      "address": "0x0000000000000000000000000000000000000002",
+      "name": "Validator-EU-01",
+      "stake": "50000000000000000000000",
+      "commission": 0.1,
+      "enode": "enode://WILL_BE_GENERATED@VALIDATOR_IP:30303",
+      "active": true
+    },
+    {
+      "address": "0x0000000000000000000000000000000000000003",
+      "name": "Validator-US-01",
+      "stake": "50000000000000000000000",
+      "commission": 0.1,
+      "enode": "enode://WILL_BE_GENERATED@VALIDATOR_IP:30303",
+      "active": true
+    },
+    {
+      "address": "0x0000000000000000000000000000000000000004",
+      "name": "Validator-AS-01",
+      "stake": "50000000000000000000000",
+      "commission": 0.1,
+      "enode": "enode://WILL_BE_GENERATED@VALIDATOR_IP:30303",
+      "active": true
+    },
+    {
+      "address": "0x0000000000000000000000000000000000000005",
+      "name": "Validator-AU-01",
+      "stake": "50000000000000000000000",
+      "commission": 0.1,
+      "enode": "enode://WILL_BE_GENERATED@VALIDATOR_IP:30303",
+      "active": true
+    }
+  ],
+  "alloc": {
+    "0x0000000000000000000000000000000000000001": {
+      "balance": "50000000000000000000000"
+    },
+    "0x0000000000000000000000000000000000000002": {
+      "balance": "50000000000000000000000"
+    },
+    "0x0000000000000000000000000000000000000003": {
+      "balance": "50000000000000000000000"
+    },
+    "0x0000000000000000000000000000000000000004": {
+      "balance": "50000000000000000000000"
+    },
+    "0x0000000000000000000000000000000000000005": {
+      "balance": "50000000000000000000000"
+    },
+    "0xF0UNDA7I0N0000000000000000000000000000001": {
+      "balance": "300000000000000000000000000",
+      "vesting": {
+        "enabled": true,
+        "schedule": "4 years linear unlock"
+      }
+    },
+    "0xREWARD5P00L0000000000000000000000000000002": {
+      "balance": "250000000000000000000000000"
+    },
+    "0xC0MMUN17Y00000000000000000000000000000003": {
+      "balance": "200000000000000000000000000",
+      "vesting": {
+        "enabled": true,
+        "schedule": "2 years linear unlock"
+      }
+    },
+    "0x7EAM0000000000000000000000000000000000004": {
+      "balance": "150000000000000000000000000",
+      "vesting": {
+        "enabled": true,
+        "schedule": "2 year cliff, 4 year linear vest"
+      }
+    },
+    "0xPUBL1C5ALE0000000000000000000000000000005": {
+      "balance": "100000000000000000000000000"
+    }
+  }
+}

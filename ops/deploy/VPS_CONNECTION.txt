@@ -1,0 +1,27 @@
+﻿# axionax VPS Quick Commands
+# Generated: 2025-11-12 17:12:09
+
+# Connect to VPS
+ssh root@217.216.109.5
+
+# Upload files (run from parent directory)
+scp -r axionax-deploy root@217.216.109.5:/opt/
+
+# OR clone from GitHub (on VPS)
+cd /opt
+git clone https://github.com/axionaxprotocol/axionax-deploy.git
+cd axionax-deploy
+
+# Setup
+cp .env.example .env
+nano .env
+chmod +x scripts/*.sh
+
+# Deploy
+sudo ./scripts/deploy-all-services.sh --check-only
+sudo ./scripts/deploy-all-services.sh --full
+
+# Manage
+./scripts/check-vps-status.sh
+./scripts/manage-services.sh logs rpc-node
+./scripts/manage-services.sh restart all

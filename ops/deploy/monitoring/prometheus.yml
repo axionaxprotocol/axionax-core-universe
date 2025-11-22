@@ -1,0 +1,92 @@
+# Prometheus Configuration for axionax
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'axionax-testnet'
+    environment: 'production'
+
+# Alertmanager configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['alertmanager:9093']
+
+# Load rules once and periodically evaluate them
+# rule_files:
+#   - "alerts/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # axionax RPC Node
+  - job_name: 'axionax-rpc'
+    static_configs:
+      - targets: ['rpc-node:8545']
+        labels:
+          service: 'rpc-node'
+          type: 'blockchain'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Block Explorer Backend
+  - job_name: 'explorer-backend'
+    static_configs:
+      - targets: ['explorer-backend:3001']
+        labels:
+          service: 'explorer'
+          type: 'api'
+    metrics_path: '/metrics'
+
+  # Faucet Service
+  - job_name: 'faucet'
+    static_configs:
+      - targets: ['faucet:3002']
+        labels:
+          service: 'faucet'
+          type: 'api'
+    metrics_path: '/metrics'
+
+  # PostgreSQL Database
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+        labels:
+          service: 'database'
+          type: 'postgres'
+
+  # Redis Cache
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+        labels:
+          service: 'cache'
+          type: 'redis'
+
+  # Nginx Reverse Proxy
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:80']
+        labels:
+          service: 'reverse-proxy'
+          type: 'nginx'
+
+  # Docker Container Metrics (if cAdvisor is running)
+  # - job_name: 'cadvisor'
+  #   static_configs:
+  #     - targets: ['cadvisor:8080']
+  #       labels:
+  #         service: 'cadvisor'
+
+  # Node Exporter (for system metrics)
+  # - job_name: 'node'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+  #       labels:
+  #         service: 'node-exporter'

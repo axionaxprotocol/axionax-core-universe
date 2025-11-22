@@ -1,0 +1,48 @@
+[package]
+name = "node"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Core modules
+network = { path = "../network" }
+state = { path = "../state" }
+rpc = { path = "../rpc" }
+blockchain = { path = "../blockchain" }
+crypto = { path = "../crypto" }
+consensus = { path = "../consensus" }
+
+# CLI Parsing
+clap = { version = "4.4", features = ["derive"] }
+
+# Async runtime
+tokio = { workspace = true, features = ["full"] }
+async-trait = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Encoding
+hex = "0.4"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Networking
+libp2p = { workspace = true }
+
+# JSON-RPC
+jsonrpsee = { version = "0.24", features = ["server"] }
+
+[dev-dependencies]
+tempfile = "3.8"

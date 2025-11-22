@@ -1,0 +1,89 @@
+GNU AFFERO GENERAL PUBLIC LICENSE
+Version 3, 19 November 2007
+
+Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+Everyone is permitted to copy and distribute verbatim copies
+of this license document, but changing it is not allowed.
+
+                            Preamble
+
+  The GNU Affero General Public License is a free, copyleft license for
+software and other kinds of works, specifically designed to ensure
+cooperation with the community in the case of network server software.
+
+[Full AGPLv3 text: https://www.gnu.org/licenses/agpl-3.0.txt]
+
+===================================================================
+ADDITIONAL TERMS FOR AXIONAX NETWORK (per AGPLv3 Section 7)
+===================================================================
+
+Copyright (c) 2025 Axionax Protocol
+
+These additional terms supplement the GNU Affero General Public License v3.0:
+
+1. TRADEMARK RESTRICTION
+   The names "Axionax", "Axionax Protocol", "AXX Token", the Axionax logo,
+   and all related trademarks are the exclusive property of Axionax Foundation.
+   
+   Use of these marks requires explicit written permission from:
+   legal@axionax.org
+   
+   This restriction does NOT apply to:
+   - Factual references in documentation
+   - Academic or research purposes
+   - Fair use commentary
+
+2. MAINNET LAUNCH RESTRICTION
+   This software may be used to operate:
+   ✅ Development networks (chain ID 1337, 31337, etc.)
+   ✅ Private testing networks
+   ✅ Academic research networks
+   ✅ Contributing to the official Axionax project
+   
+   ❌ PROHIBITED without explicit authorization:
+   - Launching public mainnets with economic tokens claiming to be "Axionax"
+   - Operating networks that could confuse users with the official Axionax Network
+   - Creating token systems branded as "AXX" or "Axionax Token"
+   
+   Authorization requests: mainnet-auth@axionax.org
+
+3. CHAIN IDENTITY REQUIREMENT
+   Any modified version or fork MUST:
+   - Use a different chain ID than official Axionax networks
+   - Use a different genesis hash
+   - Clearly identify itself as a derivative work
+   - NOT misrepresent itself as the official Axionax Network
+   
+   Official chain IDs:
+   - Testnet: 86137 (AXX testnet)
+   - Mainnet: 86150 (reserved, not yet launched)
+
+4. NETWORK COMPATIBILITY
+   Forks and derivatives must implement clear differentiation:
+   - Different network name in all user-facing interfaces
+   - Different token symbol if implementing a token
+   - Warning to users that it is NOT the official Axionax Network
+   
+5. ENFORCEMENT
+   Violation of these additional terms may result in:
+   - Revocation of authorization to use this software
+   - Legal action for trademark infringement
+   - DMCA takedown requests
+   - Community warnings and blacklisting
+   
+   Report violations: security@axionax.org
+
+6. OFFICIAL NETWORK REGISTRY
+   Verify authentic Axionax networks at:
+   https://axionax.org/networks
+   
+   Any network not listed there is NOT officially endorsed.
+
+===================================================================
+
+For questions about these terms:
+- Legal inquiries: legal@axionax.org
+- Technical questions: dev@axionax.org
+- Security reports: security@axionax.org
+
+Last updated: November 1, 2025

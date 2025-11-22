@@ -1,0 +1,37 @@
+﻿all:
+  children:
+    validator:
+      hosts:
+        validator-1:
+          ansible_host: 10.0.0.11
+          region: us-west-2
+        validator-2:
+          ansible_host: 10.0.0.12
+          region: us-east-1
+    rpc:
+      hosts:
+        rpc-1:
+          ansible_host: 10.0.1.20
+          region: eu-central-1
+    bootnode:
+      hosts:
+        boot-1:
+          ansible_host: 10.0.2.30
+    explorer:
+      hosts:
+        explorer-1:
+          ansible_host: 10.0.3.40
+    faucet:
+      hosts:
+        faucet-1:
+          ansible_host: 10.0.4.50
+    monitoring:
+      hosts:
+        monitor-1:
+          ansible_host: 10.0.5.60
+          region: us-west-2
+vars:
+  ansible_user: deployer
+  ansible_ssh_private_key_file: ~/.ssh/axionax-testnet
+  container_registry: ghcr.io/axionaxprotocol
+  network: public-testnet

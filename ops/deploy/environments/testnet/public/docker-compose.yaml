@@ -1,0 +1,130 @@
+﻿version: "3.9"
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "5"
+
+services:
+  validator:
+    image: ${CONTAINER_REGISTRY:-ghcr.io/axionaxprotocol}/core:${CORE_TAG:-latest}
+    restart: unless-stopped
+    command:
+      - axionax-node
+      - --role
+      - validator
+      - --chain
+      - /genesis/testnet.json
+      - --rpc
+      - 0.0.0.0:8545
+      - --p2p
+      - 0.0.0.0:30333
+      - --telemetry
+      - https://telemetry.axionax.org/submit
+    env_file:
+      - validator.env
+    volumes:
+      - validator-data:/data
+      - ./bootstrap/genesis:/genesis:ro
+    ports:
+      - "30333:30333/tcp"
+      - "30333:30333/udp"
+      - "8545:8545"
+    logging: *default-logging
+
+  rpc:
+    image: ${CONTAINER_REGISTRY:-ghcr.io/axionaxprotocol}/core:${CORE_TAG:-latest}
+    restart: unless-stopped
+    command:
+      - axionax-node
+      - --role
+      - rpc
+      - --chain
+      - /genesis/testnet.json
+      - --rpc
+      - 0.0.0.0:8545
+      - --unsafe-rpc
+    env_file:
+      - rpc.env
+    volumes:
+      - rpc-data:/data
+      - ./bootstrap/genesis:/genesis:ro
+    ports:
+      - "9545:8545"
+    logging: *default-logging
+
+  bootnode:
+    image: ${CONTAINER_REGISTRY:-ghcr.io/axionaxprotocol}/core:${CORE_TAG:-latest}
+    restart: unless-stopped
+    command:
+      - axionax-node
+      - --role
+      - bootnode
+      - --chain
+      - /genesis/testnet.json
+      - --p2p
+      - 0.0.0.0:30333
+    env_file:
+      - bootnode.env
+    volumes:
+      - bootnode-data:/data
+      - ./bootstrap/genesis:/genesis:ro
+    ports:
+      - "30334:30333/tcp"
+      - "30334:30333/udp"
+    logging: *default-logging
+
+  explorer:
+    image: ghcr.io/blockscout/blockscout:6.4.0
+    restart: unless-stopped
+    env_file:
+      - explorer.env
+    depends_on:
+      - rpc
+    ports:
+      - "4000:4000"
+    logging: *default-logging
+
+  faucet:
+    image: ${CONTAINER_REGISTRY:-ghcr.io/axionaxprotocol}/faucet:${FAUCET_TAG:-latest}
+    restart: unless-stopped
+    env_file:
+      - faucet.env
+    ports:
+      - "8080:8080"
+    logging: *default-logging
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    logging: *default-logging
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    restart: unless-stopped
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/dashboards:/var/lib/grafana/dashboards:ro
+      - ./monitoring/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/testnet-overview.json
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    logging: *default-logging
+
+volumes:
+  validator-data:
+  rpc-data:
+  bootnode-data:
+  grafana-data:

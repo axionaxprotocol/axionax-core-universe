@@ -1,0 +1,47 @@
+[
+  {
+    "name": "Validator-SG-01",
+    "address": "0x0000000000000000000000000000000000000001",
+    "stake": "50000000000000000000000",
+    "commission": 0.10,
+    "enode": "enode://WILL_BE_GENERATED@217.216.109.5:30303",
+    "location": "Singapore",
+    "operator": "axionax Core Team"
+  },
+  {
+    "name": "Validator-EU-01",
+    "address": "0x0000000000000000000000000000000000000002",
+    "stake": "50000000000000000000000",
+    "commission": 0.10,
+    "enode": "enode://WILL_BE_GENERATED@VALIDATOR_IP:30303",
+    "location": "Frankfurt",
+    "operator": "Community Validator"
+  },
+  {
+    "name": "Validator-US-01",
+    "address": "0x0000000000000000000000000000000000000003",
+    "stake": "50000000000000000000000",
+    "commission": 0.10,
+    "enode": "enode://WILL_BE_GENERATED@VALIDATOR_IP:30303",
+    "location": "N. Virginia",
+    "operator": "Community Validator"
+  },
+  {
+    "name": "Validator-AS-01",
+    "address": "0x0000000000000000000000000000000000000004",
+    "stake": "50000000000000000000000",
+    "commission": 0.10,
+    "enode": "enode://WILL_BE_GENERATED@VALIDATOR_IP:30303",
+    "location": "Tokyo",
+    "operator": "Community Validator"
+  },
+  {
+    "name": "Validator-AU-01",
+    "address": "0x0000000000000000000000000000000000000005",
+    "stake": "50000000000000000000000",
+    "commission": 0.10,
+    "enode": "enode://WILL_BE_GENERATED@VALIDATOR_IP:30303",
+    "location": "Sydney",
+    "operator": "Community Validator"
+  }
+]

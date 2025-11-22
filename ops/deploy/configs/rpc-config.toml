@@ -1,0 +1,51 @@
+# axionax RPC Node Configuration
+
+[network]
+network_id = "axionax-testnet-1"
+chain_id = 888
+listen_address = "0.0.0.0:30303"
+max_peers = 50
+enable_mdns = true
+
+[rpc]
+enabled = true
+host = "0.0.0.0"
+port = 8545
+cors_origins = ["*"]
+allowed_methods = [
+    "eth_blockNumber",
+    "eth_getBalance",
+    "eth_getBlockByNumber",
+    "eth_getBlockByHash",
+    "eth_getTransactionByHash",
+    "eth_getTransactionReceipt",
+    "eth_sendRawTransaction",
+    "eth_call",
+    "eth_estimateGas",
+    "eth_gasPrice",
+    "eth_chainId",
+    "net_version"
+]
+
+[websocket]
+enabled = true
+host = "0.0.0.0"
+port = 8546
+max_connections = 100
+
+[consensus]
+block_time = 3  # seconds
+epoch_length = 100
+
+[storage]
+data_dir = "/data/axionax"
+state_db_cache_size = 1024  # MB
+block_db_cache_size = 512   # MB
+
+[logging]
+level = "info"
+format = "json"
+
+[metrics]
+enabled = true
+port = 9100

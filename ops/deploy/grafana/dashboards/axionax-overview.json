@@ -1,0 +1,100 @@
+{
+  "dashboard": {
+    "title": "AxionAX Testnet Overview",
+    "tags": ["axionax", "testnet", "overview"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 0,
+    "refresh": "5s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Service Health Status",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "up{job=\"node-exporter\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "textMode": "value_and_name"
+        }
+      },
+      {
+        "id": 2,
+        "title": "Block Height",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "ethereum_block_number",
+            "refId": "A",
+            "legendFormat": "Block Height"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Block Number"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "CPU Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "100 - (avg by (instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+            "refId": "A",
+            "legendFormat": "CPU %"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Memory Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8},
+        "targets": [
+          {
+            "expr": "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)",
+            "refId": "A",
+            "legendFormat": "Memory %"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Disk Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8},
+        "targets": [
+          {
+            "expr": "100 - ((node_filesystem_avail_bytes{mountpoint=\"/\"} * 100) / node_filesystem_size_bytes{mountpoint=\"/\"})",
+            "refId": "A",
+            "legendFormat": "Disk %"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "API Response Times",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "http_request_duration_seconds",
+            "refId": "A",
+            "legendFormat": "{{service}}"
+          }
+        ]
+      }
+    ]
+  }
+}

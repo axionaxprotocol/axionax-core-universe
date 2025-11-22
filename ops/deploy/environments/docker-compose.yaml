@@ -1,0 +1,53 @@
+version: '3.8'
+
+networks:
+  axionax-network:
+    name: axionax-network
+    driver: bridge
+
+volumes:
+  axionax-data:
+    name: axionax-data
+
+services:
+  # axionax Core Node (Rust)
+  core-node:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: axionax-core-node
+    command: ["axionax_node", "start"]
+    ports:
+      - "8545:8545"   # RPC
+      - "30303:30303" # P2P
+    volumes:
+      - axionax-data:/home/axionax/.axionax
+      - ./config.yaml:/home/axionax/config.yaml:ro
+    networks:
+      - axionax-network
+    restart: on-failure
+    depends_on:
+      - deai-service
+
+  # DeAI Service (Python) - Integration Test
+  deai-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: axionax-deai-service
+    # This command runs our bridge test script.
+    command: ["python3", "-u", "/app/deai/bridge_test.py"]
+    networks:
+      - axionax-network
+    restart: "no"
+
+  # Hardhat/Anvil (from Testnet-in-a-Box)
+  hardhat:
+    image: ghcr.io/foundry-rs/foundry:latest
+    container_name: axionax-hardhat
+    command: anvil --host 0.0.0.0 --chain-id 31337
+    ports:
+      - "8547:8545" # Use a different host port to avoid conflict with core-node
+    networks:
+      - axionax-network
+    restart: unless-stopped

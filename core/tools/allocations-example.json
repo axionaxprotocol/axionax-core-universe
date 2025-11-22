@@ -1,0 +1,35 @@
+[
+  {
+    "name": "Foundation Reserve",
+    "address": "0xF0UNDA7I0N0000000000000000000000000000001",
+    "balance": "300000000000000000000000000",
+    "vesting": true,
+    "vesting_schedule": "4 years linear unlock"
+  },
+  {
+    "name": "Validator Rewards Pool",
+    "address": "0xREWARD5P00L0000000000000000000000000000002",
+    "balance": "250000000000000000000000000",
+    "vesting": false
+  },
+  {
+    "name": "Community & Ecosystem",
+    "address": "0xC0MMUN17Y00000000000000000000000000000003",
+    "balance": "200000000000000000000000000",
+    "vesting": true,
+    "vesting_schedule": "2 years linear unlock"
+  },
+  {
+    "name": "Team & Advisors",
+    "address": "0x7EAM0000000000000000000000000000000000004",
+    "balance": "150000000000000000000000000",
+    "vesting": true,
+    "vesting_schedule": "2 year cliff, 4 year linear vest"
+  },
+  {
+    "name": "Public Sale",
+    "address": "0xPUBL1C5ALE0000000000000000000000000000005",
+    "balance": "100000000000000000000000000",
+    "vesting": false
+  }
+]
