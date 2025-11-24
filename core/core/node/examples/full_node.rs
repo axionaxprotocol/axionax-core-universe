@@ -7,15 +7,15 @@
 //!
 //! Run with: cargo run --example full_node -p node
 
+use blockchain::{Block, Transaction};
+use clap::Parser;
+use node::{AxionaxNode, NodeConfig};
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
-use blockchain::{Block, Transaction};
-use clap::Parser;
-use node::{axionaxNode, NodeConfig};
 use tokio::time::{sleep, Duration};
 use tracing::{info, Level};
-use tracing_subscriber;
+use tracing_subscriber::fmt;
 
 /// axionax Full Node
 #[derive(Parser, Debug)]
@@ -41,17 +41,19 @@ struct Args {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Initialize logging
-    tracing_subscriber::fmt()
-        .with_max_level(Level::INFO)
-        .init();
+    fmt().with_max_level(Level::INFO).init();
 
     let args = Args::parse();
 
-    println!("
-╔════════════════════════════════════════════╗");
+    println!(
+        "
+╔════════════════════════════════════════════╗"
+    );
     println!("║             axionax Full Node             ║");
-    println!("╚════════════════════════════════════════════╝
-");
+    println!(
+        "╚════════════════════════════════════════════╝
+"
+    );
 
     // Configure node from command line arguments
     let mut config = match args.chain_id {
@@ -67,30 +69,43 @@ async fn main() -> anyhow::Result<()> {
     println!("   Chain ID: {}", config.network.chain_id);
     println!("   RPC Address: {}", config.rpc_addr);
     println!("   State Path: {}", config.state_path);
-    println!("   Demo Mode: {}", if args.demo_mode { "Enabled" } else { "Disabled" });
+    println!(
+        "   Demo Mode: {}",
+        if args.demo_mode {
+            "Enabled"
+        } else {
+            "Disabled"
+        }
+    );
     println!();
 
     // Create and start node
     println!("🚀 Starting axionax node!\n");
-    let mut node = axionaxNode::new(config).await?;
+    let mut node = AxionaxNode::new(config).await?;
     node.start().await?;
 
     // Give RPC server time to start
     sleep(Duration::from_secs(1)).await;
 
-    println!("
+    println!(
+        "
 ✅ Node is fully operational!
-");
-    println!("═══════════════════════════════════════════════
-");
+"
+    );
+    println!(
+        "═══════════════════════════════════════════════
+"
+    );
 
     if args.demo_mode {
         run_demo_sequence(&mut node).await?;
     }
 
     // Display node statistics
-    println!("═══════════════════════════════════════════════
-");
+    println!(
+        "═══════════════════════════════════════════════
+"
+    );
     println!("📊 Node Statistics:");
     let stats = node.stats().await;
     println!("   Blocks received: {}", stats.blocks_received);
@@ -114,15 +129,19 @@ async fn main() -> anyhow::Result<()> {
     println!();
 
     // Display RPC API examples
-    println!("═══════════════════════════════════════════════
-");
+    println!(
+        "═══════════════════════════════════════════════
+"
+    );
     println!("🔌 RPC API is now available at: http://{}\n", args.rpc_addr);
     println!("You can test it with these curl commands:\n");
 
     println!("1️⃣  Get current block number:");
     println!("   curl -X POST http://{}\n", args.rpc_addr);
     println!("     -H 'Content-Type: application/json' \n");
-    println!("     -d '{{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}}'");
+    println!(
+        "     -d '{{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}}'"
+    );
     println!();
 
     println!("2️⃣  Get latest block:");
@@ -155,7 +174,7 @@ async fn main() -> anyhow::Result<()> {
     }
 }
 
-async fn run_demo_sequence(node: &mut axionaxNode) -> anyhow::Result<()> {
+async fn run_demo_sequence(node: &mut AxionaxNode) -> anyhow::Result<()> {
     println!("📦 Creating genesis block...");
     let genesis = Block {
         number: 0,

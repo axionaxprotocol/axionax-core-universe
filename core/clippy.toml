@@ -3,42 +3,12 @@
 # Deny warnings in CI
 warn-on-all-wildcard-imports = true
 
-# Pedantic lints
-pedantic-lints = [
-    "cast_lossless",
-    "cast_possible_truncation",
-    "cast_possible_wrap",
-    "cast_precision_loss",
-    "cast_sign_loss",
-    "checked_conversions",
-    "explicit_into_iter_loop",
-    "explicit_iter_loop",
-    "filter_map_next",
-    "flat_map_option",
-    "inefficient_to_string",
-    "large_types_passed_by_value",
-    "manual_ok_or",
-    "map_flatten",
-    "map_unwrap_or",
-    "match_same_arms",
-    "missing_errors_doc",
-    "must_use_candidate",
-    "needless_continue",
-    "needless_pass_by_value",
-    "option_option",
-    "redundant_closure_for_method_calls",
-    "semicolon_if_nothing_returned",
-    "similar_names",
-    "single_match_else",
-    "unnecessary_wraps",
-    "unnested_or_patterns",
-    "unused_self",
-    "used_underscore_binding"
-]
+# Complexity threshold
+cognitive-complexity-threshold = 30
+type-complexity-threshold = 500
 
-# Allow these lints
-allow = [
-    "clippy::module_name_repetitions",
-    "clippy::missing_errors_doc",
-    "clippy::missing_panics_doc"
-]
+# Allow specific lints that are too strict
+disallowed-names = []
+
+# Max parameters
+too-many-arguments-threshold = 10

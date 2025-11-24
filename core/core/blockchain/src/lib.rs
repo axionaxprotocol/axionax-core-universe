@@ -7,11 +7,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-pub mod validation;
 pub mod mempool;
+pub mod validation;
 
+pub use mempool::{PoolConfig, PoolError, PoolStats, TransactionPool};
 pub use validation::{BlockValidator, TransactionValidator, ValidationConfig, ValidationError};
-pub use mempool::{TransactionPool, PoolConfig, PoolError, PoolStats};
 
 /// Block represents a block in the chain
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -44,7 +44,7 @@ pub struct Transaction {
 pub struct Blockchain {
     blocks: Arc<RwLock<HashMap<u64, Block>>>,
     latest_block: Arc<RwLock<u64>>,
-    config: BlockchainConfig,
+    _config: BlockchainConfig,
 }
 
 /// Blockchain configuration
@@ -61,7 +61,7 @@ impl Blockchain {
         Self {
             blocks: Arc::new(RwLock::new(HashMap::new())),
             latest_block: Arc::new(RwLock::new(0)),
-            config,
+            _config: config,
         }
     }
 

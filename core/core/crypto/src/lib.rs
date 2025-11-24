@@ -6,7 +6,7 @@
 //! - **Signatures**: Ed25519 digital signatures
 //! - **KDF**: Argon2id key derivation and password hashing
 
-use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer, Verifier};
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use sha3::{Digest, Sha3_256};
 
 // Re-export commonly used KDF functions
@@ -47,7 +47,12 @@ impl VRF {
     }
 
     /// Verifies VRF proof
-    pub fn verify(verifying_key: &VerifyingKey, input: &[u8], proof: &[u8], _output: &[u8; 32]) -> bool {
+    pub fn verify(
+        verifying_key: &VerifyingKey,
+        input: &[u8],
+        proof: &[u8],
+        _output: &[u8; 32],
+    ) -> bool {
         if proof.len() != 64 {
             return false;
         }
@@ -68,7 +73,7 @@ impl VRF {
 /// Hash functions
 pub mod hash {
     use super::*;
-    use blake2::{Blake2s256, Blake2b512};
+    use blake2::{Blake2b512, Blake2s256};
 
     /// SHA3-256 hash function
     /// Use for: VRF, Consensus sampling, Standard compatibility
@@ -176,11 +181,8 @@ impl Default for VRF {
 /// Key Derivation Functions (KDF) module
 pub mod kdf {
     use argon2::{
-        Argon2,
-        PasswordHash,
-        PasswordHasher,
-        PasswordVerifier,
-        password_hash::{rand_core::OsRng, SaltString, Error as Argon2Error}
+        password_hash::{rand_core::OsRng, Error as Argon2Error, SaltString},
+        Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
     };
 
     /// Derive a 32-byte key from password using Argon2id
@@ -218,7 +220,8 @@ pub mod kdf {
         let salt = SaltString::generate(&mut OsRng);
         let argon2 = Argon2::default();
 
-        argon2.hash_password(password, &salt)
+        argon2
+            .hash_password(password, &salt)
             .map(|hash| hash.to_string())
     }
 
@@ -310,19 +313,30 @@ mod tests {
         }
         let sha3_duration = start.elapsed();
 
-        println!("\nPerformance Comparison (1KB data, {} iterations):", iterations);
-        println!("  Blake2s-256: {:.2}ms ({:.0} ops/sec)",
-                 blake2s_duration.as_secs_f64() * 1000.0,
-                 iterations as f64 / blake2s_duration.as_secs_f64());
-        println!("  SHA3-256:    {:.2}ms ({:.0} ops/sec)",
-                 sha3_duration.as_secs_f64() * 1000.0,
-                 iterations as f64 / sha3_duration.as_secs_f64());
-        println!("  Speedup:     {:.2}x faster",
-                 sha3_duration.as_secs_f64() / blake2s_duration.as_secs_f64());
+        println!(
+            "\nPerformance Comparison (1KB data, {} iterations):",
+            iterations
+        );
+        println!(
+            "  Blake2s-256: {:.2}ms ({:.0} ops/sec)",
+            blake2s_duration.as_secs_f64() * 1000.0,
+            iterations as f64 / blake2s_duration.as_secs_f64()
+        );
+        println!(
+            "  SHA3-256:    {:.2}ms ({:.0} ops/sec)",
+            sha3_duration.as_secs_f64() * 1000.0,
+            iterations as f64 / sha3_duration.as_secs_f64()
+        );
+        println!(
+            "  Speedup:     {:.2}x faster",
+            sha3_duration.as_secs_f64() / blake2s_duration.as_secs_f64()
+        );
 
         // Blake2s should be faster than SHA3
-        assert!(blake2s_duration < sha3_duration,
-                "Blake2s should be faster than SHA3");
+        assert!(
+            blake2s_duration < sha3_duration,
+            "Blake2s should be faster than SHA3"
+        );
     }
 
     #[test]

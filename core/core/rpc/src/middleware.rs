@@ -7,7 +7,7 @@ use std::net::IpAddr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
-use tracing::{warn, debug};
+use tracing::{debug, warn};
 
 /// Rate limiter configuration
 #[derive(Debug, Clone)]
@@ -173,8 +173,8 @@ impl RequestValidator {
 impl Default for RequestValidator {
     fn default() -> Self {
         Self::new(
-            50,          // Max 50 requests in a batch
-            1_048_576,   // Max 1MB request size
+            50,        // Max 50 requests in a batch
+            1_048_576, // Max 1MB request size
         )
     }
 }
@@ -200,15 +200,8 @@ impl CorsConfig {
         Self {
             allowed_origins: vec![],
             allow_all: true,
-            allowed_methods: vec![
-                "GET".to_string(),
-                "POST".to_string(),
-                "OPTIONS".to_string(),
-            ],
-            allowed_headers: vec![
-                "Content-Type".to_string(),
-                "Authorization".to_string(),
-            ],
+            allowed_methods: vec!["GET".to_string(), "POST".to_string(), "OPTIONS".to_string()],
+            allowed_headers: vec!["Content-Type".to_string(), "Authorization".to_string()],
             max_age: 3600,
         }
     }

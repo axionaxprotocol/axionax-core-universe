@@ -1,17 +1,16 @@
 // Simplified wrappers to avoid deep Rust API exposure to Python
 
-use pyo3::prelude::*;
-use consensus::ConsensusConfig;
 use blockchain::BlockchainConfig;
+use consensus::ConsensusConfig;
 
 /// Get default consensus config
 pub fn default_consensus_config() -> ConsensusConfig {
     ConsensusConfig {
-        sample_size: 1000,              // Recommended: 600-1500 (ARCHITECTURE v1.5)
-        min_confidence: 0.99,            // 99%+ required detection probability  
-        fraud_window_blocks: 720,        // ~3600s @ 5s/block (Δt_fraud)
-        min_validator_stake: 100_000,    // Minimum stake requirement
-        false_pass_penalty_bps: 500,     // 5% (≥500 bps per ARCHITECTURE v1.5)
+        sample_size: 1000,            // Recommended: 600-1500 (ARCHITECTURE v1.5)
+        min_confidence: 0.99,         // 99%+ required detection probability
+        fraud_window_blocks: 720,     // ~3600s @ 5s/block (Δt_fraud)
+        min_validator_stake: 100_000, // Minimum stake requirement
+        false_pass_penalty_bps: 500,  // 5% (≥500 bps per ARCHITECTURE v1.5)
     }
 }
 

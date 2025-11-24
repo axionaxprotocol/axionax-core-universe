@@ -100,7 +100,10 @@ async fn main() -> anyhow::Result<()> {
     println!("Latest block: #{} by {}", latest.number, latest.proposer);
 
     let retrieved_tx = state.get_transaction(&tx_hash)?;
-    println!("Retrieved tx: {} -> {} (value: {})", retrieved_tx.from, retrieved_tx.to, retrieved_tx.value);
+    println!(
+        "Retrieved tx: {} -> {} (value: {})",
+        retrieved_tx.from, retrieved_tx.to, retrieved_tx.value
+    );
 
     // 4. Start RPC server
     println!("\n--- Starting RPC server ---");
@@ -115,7 +118,9 @@ async fn main() -> anyhow::Result<()> {
     println!("1. Get current block number:");
     println!("   curl -X POST http://127.0.0.1:8545 \\");
     println!("     -H 'Content-Type: application/json' \\");
-    println!("     -d '{{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}}'");
+    println!(
+        "     -d '{{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}}'"
+    );
 
     println!("\n2. Get latest block:");
     println!("   curl -X POST http://127.0.0.1:8545 \\");

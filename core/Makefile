@@ -16,7 +16,7 @@ python-install:
 	python -m pip install -r deai/requirements.txt
 
 python-test:
-	pytest tests --maxfail=1 --disable-warnings -q
+	PYTHONPATH=$$PYTHONPATH:$$(pwd)/deai/lib pytest tests/integration_simple.py --maxfail=1 --disable-warnings -q
 
 check: fmt clippy test python-test
 

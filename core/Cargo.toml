@@ -49,20 +49,6 @@ hex = "0.4"
 rocksdb = "0.22"
 sled = "0.34"
 
-# Build optimization profiles
-[profile.release]
-opt-level = 3
-lto = "fat"
-codegen-units = 1
-strip = true
-panic = "abort"
-
-[profile.dev]
-opt-level = 0
-
-[profile.bench]
-inherits = "release"
-
 # Logging & Tracing
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
@@ -77,10 +63,12 @@ criterion = "0.5"
 # Python Bindings
 pyo3 = { version = "0.22", features = ["extension-module"] }
 
+# Build optimization profiles
 [profile.release]
 opt-level = 3
-lto = true
+lto = "fat"
 codegen-units = 1
+strip = true
 panic = "abort"
 
 [profile.dev]

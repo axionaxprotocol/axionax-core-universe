@@ -197,6 +197,9 @@ mod tests {
     fn test_topic_names() {
         assert_eq!(MessageType::Blocks.topic_name(), "/axionax/blocks/1.0.0");
         assert_eq!(MessageType::Transactions.topic_name(), "/axionax/txs/1.0.0");
-        assert_eq!(MessageType::Consensus.topic_name(), "/axionax/consensus/1.0.0");
+        assert_eq!(
+            MessageType::Consensus.topic_name(),
+            "/axionax/consensus/1.0.0"
+        );
     }
 }

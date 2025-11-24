@@ -2,16 +2,14 @@
 
 use futures::StreamExt;
 use libp2p::{
-    identity::Keypair,
-    multiaddr::Protocol,
-    swarm::SwarmEvent,
-    Multiaddr, PeerId, Swarm, SwarmBuilder,
+    identity::Keypair, multiaddr::Protocol, swarm::SwarmEvent, Multiaddr, PeerId, Swarm,
+    SwarmBuilder,
 };
 use tokio::sync::mpsc;
 use tracing::{debug, error, info, warn};
 
 use crate::{
-    behaviour::axionaxBehaviour,
+    behaviour::AxionaxBehaviour,
     config::NetworkConfig,
     error::{NetworkError, Result},
     protocol::{MessageType, NetworkMessage},
@@ -19,10 +17,10 @@ use crate::{
 
 /// Network manager handles P2P communication
 pub struct NetworkManager {
-    swarm: Swarm<axionaxBehaviour>,
+    swarm: Swarm<AxionaxBehaviour>,
     config: NetworkConfig,
     local_peer_id: PeerId,
-    message_tx: mpsc::UnboundedSender<NetworkMessage>,
+    _message_tx: mpsc::UnboundedSender<NetworkMessage>,
     message_rx: mpsc::UnboundedReceiver<NetworkMessage>,
 }
 
@@ -39,9 +37,7 @@ pub enum NetworkEvent {
         message: NetworkMessage,
     },
     /// Message published successfully
-    MessagePublished {
-        message_id: String,
-    },
+    MessagePublished { message_id: String },
 }
 
 impl NetworkManager {
@@ -56,7 +52,7 @@ impl NetworkManager {
         info!("Local peer ID: {}", local_peer_id);
 
         // Create network behaviour
-        let behaviour = axionaxBehaviour::new(local_peer_id, &config)
+        let behaviour = AxionaxBehaviour::new(local_peer_id, &config)
             .map_err(|e| NetworkError::InitializationError(e.to_string()))?;
 
         // Build swarm
@@ -71,9 +67,7 @@ impl NetworkManager {
             .with_quic()
             .with_behaviour(|_| behaviour)
             .map_err(|e| NetworkError::InitializationError(e.to_string()))?
-            .with_swarm_config(|cfg| {
-                cfg.with_idle_connection_timeout(config.idle_timeout)
-            })
+            .with_swarm_config(|cfg| cfg.with_idle_connection_timeout(config.idle_timeout))
             .build();
 
         // Create message channels
@@ -83,7 +77,7 @@ impl NetworkManager {
             swarm,
             config,
             local_peer_id,
-            message_tx,
+            _message_tx: message_tx,
             message_rx,
         })
     }
@@ -93,11 +87,12 @@ impl NetworkManager {
         info!("Starting network manager");
 
         // Listen on configured address
-        let listen_addr: Multiaddr = self.config.listen_multiaddr()
-            .parse()
-            .map_err(|e| NetworkError::InitializationError(format!("Invalid listen address: {}", e)))?;
+        let listen_addr: Multiaddr = self.config.listen_multiaddr().parse().map_err(|e| {
+            NetworkError::InitializationError(format!("Invalid listen address: {}", e))
+        })?;
 
-        self.swarm.listen_on(listen_addr.clone())
+        self.swarm
+            .listen_on(listen_addr.clone())
             .map_err(|e| NetworkError::InitializationError(e.to_string()))?;
 
         info!("Listening on {}", listen_addr);
@@ -122,7 +117,9 @@ impl NetworkManager {
 
         for topic in topics {
             let topic_name = topic.topic_name();
-            self.swarm.behaviour_mut().subscribe(&topic_name)
+            self.swarm
+                .behaviour_mut()
+                .subscribe(&topic_name)
                 .map_err(|e| NetworkError::SubscriptionError(e.to_string()))?;
             debug!("Subscribed to topic: {}", topic_name);
         }
@@ -137,16 +134,22 @@ impl NetworkManager {
             return Ok(());
         }
 
-        info!("Connecting to {} bootstrap nodes", self.config.bootstrap_nodes.len());
+        info!(
+            "Connecting to {} bootstrap nodes",
+            self.config.bootstrap_nodes.len()
+        );
 
         for node in &self.config.bootstrap_nodes {
             match node.parse::<Multiaddr>() {
                 Ok(addr) => {
                     if let Some(Protocol::P2p(peer_id)) = addr.iter().last() {
-                        let peer_id = PeerId::from_multihash(peer_id.into())
-                            .map_err(|_e| NetworkError::InvalidPeerId(format!("Invalid peer ID")))?;
+                        let peer_id = PeerId::from_multihash(peer_id.into()).map_err(|_e| {
+                            NetworkError::InvalidPeerId("Invalid peer ID".to_string())
+                        })?;
 
-                        self.swarm.behaviour_mut().add_address(&peer_id, addr.clone());
+                        self.swarm
+                            .behaviour_mut()
+                            .add_address(&peer_id, addr.clone());
 
                         match self.swarm.dial(addr.clone()) {
                             Ok(_) => info!("Dialing bootstrap node: {}", addr),
@@ -164,10 +167,13 @@ impl NetworkManager {
     /// Publish message to network
     pub fn publish(&mut self, message: NetworkMessage) -> Result<()> {
         let topic = message.message_type().topic_name();
-        let data = message.to_bytes()
-            .map_err(|e| NetworkError::SerializationError(e))?;
+        let data = message
+            .to_bytes()
+            .map_err(NetworkError::SerializationError)?;
 
-        self.swarm.behaviour_mut().publish(&topic, data)
+        self.swarm
+            .behaviour_mut()
+            .publish(&topic, data)
             .map_err(|e| NetworkError::SendError(e.to_string()))?;
 
         debug!("Published message to topic: {}", topic);
@@ -186,7 +192,9 @@ impl NetworkManager {
 
     /// Get list of connected peers
     pub fn connected_peers(&self) -> Vec<PeerId> {
-        self.swarm.behaviour().connected_peers()
+        self.swarm
+            .behaviour()
+            .connected_peers()
             .iter()
             .map(|&peer_id| *peer_id)
             .collect()
@@ -216,7 +224,10 @@ impl NetworkManager {
     }
 
     /// Handle swarm events
-    async fn handle_swarm_event(&mut self, event: SwarmEvent<crate::behaviour::axionaxBehaviourEvent>) -> Result<()> {
+    async fn handle_swarm_event(
+        &mut self,
+        event: SwarmEvent<crate::behaviour::AxionaxBehaviourEvent>,
+    ) -> Result<()> {
         match event {
             SwarmEvent::NewListenAddr { address, .. } => {
                 info!("Listening on {}", address);
@@ -241,8 +252,15 @@ impl NetworkManager {
                     warn!("Outgoing connection error: {}", error);
                 }
             }
-            SwarmEvent::IncomingConnectionError { send_back_addr, error, .. } => {
-                warn!("Incoming connection error from {}: {}", send_back_addr, error);
+            SwarmEvent::IncomingConnectionError {
+                send_back_addr,
+                error,
+                ..
+            } => {
+                warn!(
+                    "Incoming connection error from {}: {}",
+                    send_back_addr, error
+                );
             }
             _ => {}
         }

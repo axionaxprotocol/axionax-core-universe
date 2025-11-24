@@ -11,16 +11,16 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tracing::{info, warn};
+use tracing::info;
 
 use blockchain::{Block, Transaction};
 use state::StateDB;
 
-pub mod middleware;
 pub mod health;
+pub mod middleware;
 
-pub use middleware::{RateLimiter, RateLimitConfig, RequestValidator, CorsConfig};
 pub use health::{HealthChecker, HealthStatus, NodeStatus};
+pub use middleware::{CorsConfig, RateLimitConfig, RateLimiter, RequestValidator};
 
 /// RPC server errors
 #[derive(Debug, thiserror::Error)]
@@ -56,15 +56,15 @@ impl From<RpcError> for ErrorObjectOwned {
 /// Block response format (simplified)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockResponse {
-    pub number: String,        // hex-encoded
-    pub hash: String,           // hex-encoded
-    pub parent_hash: String,    // hex-encoded
-    pub timestamp: String,      // hex-encoded
+    pub number: String,      // hex-encoded
+    pub hash: String,        // hex-encoded
+    pub parent_hash: String, // hex-encoded
+    pub timestamp: String,   // hex-encoded
     pub proposer: String,
     pub transactions: Vec<String>, // tx hashes (hex-encoded)
-    pub state_root: String,     // hex-encoded
-    pub gas_used: String,       // hex-encoded
-    pub gas_limit: String,      // hex-encoded
+    pub state_root: String,        // hex-encoded
+    pub gas_used: String,          // hex-encoded
+    pub gas_limit: String,         // hex-encoded
 }
 
 impl From<Block> for BlockResponse {
@@ -75,7 +75,9 @@ impl From<Block> for BlockResponse {
             parent_hash: format!("0x{}", hex::encode(block.parent_hash)),
             timestamp: format!("0x{:x}", block.timestamp),
             proposer: block.proposer,
-            transactions: block.transactions.iter()
+            transactions: block
+                .transactions
+                .iter()
                 .map(|tx| format!("0x{}", hex::encode(tx.hash)))
                 .collect(),
             state_root: format!("0x{}", hex::encode(block.state_root)),
@@ -88,14 +90,14 @@ impl From<Block> for BlockResponse {
 /// Transaction response format
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionResponse {
-    pub hash: String,           // hex-encoded
+    pub hash: String, // hex-encoded
     pub from: String,
     pub to: String,
-    pub value: String,          // hex-encoded
-    pub gas_price: String,      // hex-encoded
-    pub gas_limit: String,      // hex-encoded
-    pub nonce: String,          // hex-encoded
-    pub data: String,           // hex-encoded
+    pub value: String,     // hex-encoded
+    pub gas_price: String, // hex-encoded
+    pub gas_limit: String, // hex-encoded
+    pub nonce: String,     // hex-encoded
+    pub data: String,      // hex-encoded
 }
 
 impl From<Transaction> for TransactionResponse {
@@ -115,7 +117,7 @@ impl From<Transaction> for TransactionResponse {
 
 /// Ethereum-compatible JSON-RPC API
 #[rpc(server)]
-pub trait axionaxRpc {
+pub trait AxionaxRpc {
     /// Get current block number (chain height)
     #[method(name = "eth_blockNumber")]
     async fn block_number(&self) -> RpcResult<String>;
@@ -153,12 +155,12 @@ pub trait axionaxRpc {
 }
 
 /// RPC server implementation
-pub struct axionaxRpcServerImpl {
+pub struct AxionaxRpcServerImpl {
     state: Arc<StateDB>,
     chain_id: u64,
 }
 
-impl axionaxRpcServerImpl {
+impl AxionaxRpcServerImpl {
     /// Create new RPC server
     pub fn new(state: Arc<StateDB>, chain_id: u64) -> Self {
         Self { state, chain_id }
@@ -166,10 +168,9 @@ impl axionaxRpcServerImpl {
 }
 
 #[async_trait]
-impl axionaxRpcServer for axionaxRpcServerImpl {
+impl AxionaxRpcServer for AxionaxRpcServerImpl {
     async fn block_number(&self) -> RpcResult<String> {
-        let height = self.state.get_chain_height()
-            .map_err(RpcError::from)?;
+        let height = self.state.get_chain_height().map_err(RpcError::from)?;
 
         Ok(format!("0x{:x}", height))
     }
@@ -181,11 +182,9 @@ impl axionaxRpcServer for axionaxRpcServerImpl {
     ) -> RpcResult<Option<BlockResponse>> {
         // Parse block number (hex or "latest")
         let number = if block_number == "latest" {
-            self.state.get_chain_height()
-                .map_err(RpcError::from)?
+            self.state.get_chain_height().map_err(RpcError::from)?
         } else {
-            parse_hex_u64(&block_number)
-                .map_err(|e| RpcError::InvalidParams(e))?
+            parse_hex_u64(&block_number).map_err(RpcError::InvalidParams)?
         };
 
         match self.state.get_block_by_number(number) {
@@ -200,8 +199,7 @@ impl axionaxRpcServer for axionaxRpcServerImpl {
         block_hash: String,
         _full_transactions: bool,
     ) -> RpcResult<Option<BlockResponse>> {
-        let hash = parse_hex_hash(&block_hash)
-            .map_err(|e| RpcError::InvalidParams(e))?;
+        let hash = parse_hex_hash(&block_hash).map_err(RpcError::InvalidParams)?;
 
         match self.state.get_block_by_hash(&hash) {
             Ok(block) => Ok(Some(block.into())),
@@ -214,8 +212,7 @@ impl axionaxRpcServer for axionaxRpcServerImpl {
         &self,
         tx_hash: String,
     ) -> RpcResult<Option<TransactionResponse>> {
-        let hash = parse_hex_hash(&tx_hash)
-            .map_err(|e| RpcError::InvalidParams(e))?;
+        let hash = parse_hex_hash(&tx_hash).map_err(RpcError::InvalidParams)?;
 
         match self.state.get_transaction(&hash) {
             Ok(tx) => Ok(Some(tx.into())),
@@ -241,11 +238,9 @@ pub async fn start_rpc_server(
 ) -> anyhow::Result<ServerHandle> {
     info!("Starting RPC server on {}", addr);
 
-    let server = Server::builder()
-        .build(addr)
-        .await?;
+    let server = Server::builder().build(addr).await?;
 
-    let rpc_impl = axionaxRpcServerImpl::new(state, chain_id);
+    let rpc_impl = AxionaxRpcServerImpl::new(state, chain_id);
     let handle = server.start(rpc_impl.into_rpc());
 
     info!("RPC server started successfully");
@@ -255,8 +250,7 @@ pub async fn start_rpc_server(
 /// Parse hex string to u64
 fn parse_hex_u64(hex: &str) -> Result<u64, String> {
     let hex = hex.strip_prefix("0x").unwrap_or(hex);
-    u64::from_str_radix(hex, 16)
-        .map_err(|e| format!("Invalid hex number: {}", e))
+    u64::from_str_radix(hex, 16).map_err(|e| format!("Invalid hex number: {}", e))
 }
 
 /// Parse hex string to 32-byte hash
@@ -264,11 +258,13 @@ fn parse_hex_hash(hex: &str) -> Result<[u8; 32], String> {
     let hex = hex.strip_prefix("0x").unwrap_or(hex);
 
     if hex.len() != 64 {
-        return Err(format!("Invalid hash length: expected 64 hex chars, got {}", hex.len()));
+        return Err(format!(
+            "Invalid hash length: expected 64 hex chars, got {}",
+            hex.len()
+        ));
     }
 
-    let bytes = hex::decode(hex)
-        .map_err(|e| format!("Invalid hex string: {}", e))?;
+    let bytes = hex::decode(hex).map_err(|e| format!("Invalid hex string: {}", e))?;
 
     let mut hash = [0u8; 32];
     hash.copy_from_slice(&bytes);
@@ -288,7 +284,7 @@ mod tests {
     #[tokio::test]
     async fn test_rpc_block_number() {
         let state = create_test_state();
-        let rpc = axionaxRpcServerImpl::new(state, 86137);
+        let rpc = AxionaxRpcServerImpl::new(state, 86137);
 
         let result = rpc.block_number().await.unwrap();
         assert_eq!(result, "0x0"); // Genesis state
@@ -297,7 +293,7 @@ mod tests {
     #[tokio::test]
     async fn test_rpc_chain_id() {
         let state = create_test_state();
-        let rpc = axionaxRpcServerImpl::new(state, 86137);
+        let rpc = AxionaxRpcServerImpl::new(state, 86137);
 
         let result = rpc.chain_id().await.unwrap();
         assert_eq!(result, "0x15079"); // 86137 in hex
@@ -306,7 +302,7 @@ mod tests {
     #[tokio::test]
     async fn test_rpc_net_version() {
         let state = create_test_state();
-        let rpc = axionaxRpcServerImpl::new(state, 86137);
+        let rpc = AxionaxRpcServerImpl::new(state, 86137);
 
         let result = rpc.net_version().await.unwrap();
         assert_eq!(result, "86137");
@@ -332,26 +328,31 @@ mod tests {
         assert!(parse_hex_hash("0x1234").is_err());
 
         // Invalid hex
-        assert!(parse_hex_hash("0xZZZZ567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef").is_err());
+        assert!(parse_hex_hash(
+            "0xZZZZ567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        )
+        .is_err());
     }
 
     #[tokio::test]
     async fn test_rpc_get_block_not_found() {
         let state = create_test_state();
-        let rpc = axionaxRpcServerImpl::new(state, 86137);
+        let rpc = AxionaxRpcServerImpl::new(state, 86137);
 
-        let result = rpc.get_block_by_number("0x999".to_string(), false).await.unwrap();
+        let result = rpc
+            .get_block_by_number("0x999".to_string(), false)
+            .await
+            .unwrap();
         assert!(result.is_none());
     }
 
     #[tokio::test]
     async fn test_rpc_get_transaction_not_found() {
         let state = create_test_state();
-        let rpc = axionaxRpcServerImpl::new(state, 86137);
+        let rpc = AxionaxRpcServerImpl::new(state, 86137);
 
         let hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
         let result = rpc.get_transaction_by_hash(hash.to_string()).await.unwrap();
         assert!(result.is_none());
     }
 }
-

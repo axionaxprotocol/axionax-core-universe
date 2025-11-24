@@ -1,15 +1,17 @@
-use pyo3::prelude::*;
+#![allow(non_local_definitions)]
+
 use pyo3::exceptions::PyValueError;
+use pyo3::prelude::*;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 // Import axionax core modules
-use consensus::{ConsensusEngine, Validator, ConsensusConfig, Challenge};
-use blockchain::{Blockchain, Block, Transaction, BlockchainConfig};
+use blockchain::{Block, Blockchain};
+use consensus::{Challenge, ConsensusEngine, Validator};
 use crypto::VRF;
 
 mod simple_wrapper;
-use simple_wrapper::{default_consensus_config, default_blockchain_config};
+use simple_wrapper::{default_blockchain_config, default_consensus_config};
 
 /// Python wrapper for VRF operations
 #[pyclass]
@@ -99,18 +101,36 @@ impl PyConsensusEngine {
             is_active: validator.is_active,
         };
 
-        self.runtime.block_on(async move {
-            let eng = engine.read().await;
-            eng.register_validator(rust_validator).await
-        }).map_err(|e| PyValueError::new_err(e))
+        self.runtime
+            .block_on(async move {
+                let eng = engine.read().await;
+                eng.register_validator(rust_validator).await
+            })
+            .map_err(PyValueError::new_err)
     }
 
     /// Generate challenge
     fn generate_challenge(&self, job_id: String, output_size: usize) -> PyResult<PyChallenge> {
+        use sha3::{Digest, Sha3_256};
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        // Generate VRF seed from job_id and timestamp
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+
+        let mut hasher = Sha3_256::new();
+        hasher.update(job_id.as_bytes());
+        hasher.update(timestamp.to_le_bytes());
+        let hash = hasher.finalize();
+
+        let mut vrf_seed = [0u8; 32];
+        vrf_seed.copy_from_slice(&hash);
+
         let engine = self.engine.clone();
         let challenge = self.runtime.block_on(async move {
             let eng = engine.read().await;
-            let vrf_seed = [1u8; 32]; // TODO: generate properly
             eng.generate_challenge(job_id, output_size, vrf_seed)
         });
 
@@ -120,7 +140,10 @@ impl PyConsensusEngine {
     /// Calculate fraud detection probability (static method)
     #[staticmethod]
     fn fraud_probability(fraud_rate: f64, sample_size: usize) -> PyResult<f64> {
-        Ok(ConsensusEngine::fraud_detection_probability(fraud_rate, sample_size))
+        Ok(ConsensusEngine::fraud_detection_probability(
+            fraud_rate,
+            sample_size,
+        ))
     }
 }
 
@@ -155,7 +178,7 @@ struct PyTransaction {
     pub from: String,
     pub to: String,
     pub value: u128,
-    pub data: Vec<u8>,
+    pub _data: Vec<u8>,
 }
 
 #[pymethods]
@@ -166,12 +189,12 @@ impl PyTransaction {
             from,
             to,
             value: value as u128,
-            data,
+            _data: data,
         }
     }
 
     #[getter]
-    fn from_address(&self) -> PyResult<String> {
+    fn get_from_address(&self) -> PyResult<String> {
         Ok(self.from.clone())
     }
 

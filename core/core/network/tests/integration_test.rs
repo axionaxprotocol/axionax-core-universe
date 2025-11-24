@@ -5,13 +5,14 @@ use network::{
     manager::NetworkManager,
     protocol::{BlockMessage, NetworkMessage, TransactionMessage},
 };
-use tokio::time::{sleep, Duration};
 
 /// Test basic network manager initialization and shutdown
 #[tokio::test]
 async fn test_network_init_and_shutdown() {
     let config = NetworkConfig::dev();
-    let manager = NetworkManager::new(config).await.expect("Failed to create network manager");
+    let manager = NetworkManager::new(config)
+        .await
+        .expect("Failed to create network manager");
 
     // Verify manager was created successfully
     assert!(manager.peer_count() == 0);
@@ -29,8 +30,12 @@ async fn test_peer_discovery() {
     config2.port = 30302;
     config2.enable_mdns = true;
 
-    let manager1 = NetworkManager::new(config1).await.expect("Failed to create manager 1");
-    let manager2 = NetworkManager::new(config2).await.expect("Failed to create manager 2");
+    let manager1 = NetworkManager::new(config1)
+        .await
+        .expect("Failed to create manager 1");
+    let manager2 = NetworkManager::new(config2)
+        .await
+        .expect("Failed to create manager 2");
 
     // Verify both managers created successfully
     assert_eq!(manager1.peer_count(), 0);
@@ -41,7 +46,9 @@ async fn test_peer_discovery() {
 #[tokio::test]
 async fn test_message_publishing() {
     let config = NetworkConfig::dev();
-    let mut manager = NetworkManager::new(config).await.expect("Failed to create network manager");
+    let mut manager = NetworkManager::new(config)
+        .await
+        .expect("Failed to create network manager");
 
     // Create a test block message
     let block_msg = NetworkMessage::Block(BlockMessage {
@@ -65,7 +72,9 @@ async fn test_message_publishing() {
 #[tokio::test]
 async fn test_transaction_propagation() {
     let config = NetworkConfig::dev();
-    let mut manager = NetworkManager::new(config).await.expect("Failed to create network manager");
+    let mut manager = NetworkManager::new(config)
+        .await
+        .expect("Failed to create network manager");
 
     // Create transaction message
     let tx_msg = NetworkMessage::Transaction(TransactionMessage {
@@ -89,10 +98,13 @@ async fn test_bootstrap_connection() {
 
     // Add a bootstrap node (using a known libp2p bootstrap node for testing)
     config.bootstrap_nodes = vec![
-        "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN".to_string(),
+        "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN"
+            .to_string(),
     ];
 
-    let manager = NetworkManager::new(config).await.expect("Failed to create manager");
+    let manager = NetworkManager::new(config)
+        .await
+        .expect("Failed to create manager");
 
     // In a real scenario, this would attempt to connect to the bootstrap node
     // For now, just verify manager was created successfully
@@ -122,7 +134,9 @@ async fn test_config_validation() {
 #[tokio::test]
 async fn test_concurrent_messages() {
     let config = NetworkConfig::dev();
-    let mut manager = NetworkManager::new(config).await.expect("Failed to create manager");
+    let mut manager = NetworkManager::new(config)
+        .await
+        .expect("Failed to create manager");
 
     // Send multiple messages concurrently
     let messages = vec![

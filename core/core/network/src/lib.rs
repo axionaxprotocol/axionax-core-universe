@@ -6,24 +6,21 @@
 //! - Consensus message distribution
 //! - Peer discovery and management
 
-pub mod protocol;
-pub mod manager;
 pub mod behaviour;
 pub mod config;
 pub mod error;
+pub mod manager;
+pub mod protocol;
 
-pub use manager::NetworkManager;
-pub use protocol::{NetworkMessage, MessageType};
 pub use config::NetworkConfig;
 pub use error::{NetworkError, Result};
+pub use manager::NetworkManager;
+pub use protocol::{MessageType, NetworkMessage};
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn test_network_module() {
-        // Basic sanity test
-        assert!(true);
+        // Basic sanity test (always passes)
     }
 }

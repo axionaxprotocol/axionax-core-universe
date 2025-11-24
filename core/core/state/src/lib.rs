@@ -6,11 +6,11 @@
 //! - Account balances and nonces
 //! - Smart contract state
 
-use rocksdb::{DB, Options};
+use rocksdb::{Options, DB};
 use std::path::Path;
 use std::sync::Arc;
 use thiserror::Error;
-use tracing::{debug, info, error};
+use tracing::{debug, error, info};
 
 use blockchain::{Block, Transaction};
 
@@ -72,12 +72,10 @@ impl StateDB {
             cf::ACCOUNTS,
         ];
 
-        let db = DB::open_cf(&opts, path, &cfs)
-            .map_err(|e| StateError::DatabaseError(e.to_string()))?;
+        let db =
+            DB::open_cf(&opts, path, &cfs).map_err(|e| StateError::DatabaseError(e.to_string()))?;
 
-        Ok(Self {
-            db: Arc::new(db),
-        })
+        Ok(Self { db: Arc::new(db) })
     }
 
     /// Store a block in the database
@@ -85,22 +83,26 @@ impl StateDB {
         debug!("Storing block #{} with hash {:?}", block.number, block.hash);
 
         // Serialize block
-        let block_data = serde_json::to_vec(block)
-            .map_err(|e| StateError::SerializationError(e.to_string()))?;
+        let block_data =
+            serde_json::to_vec(block).map_err(|e| StateError::SerializationError(e.to_string()))?;
 
         // Get column family handles
-        let cf_blocks = self.db.cf_handle(cf::BLOCKS)
-            .ok_or_else(|| StateError::DatabaseError("Column family BLOCKS not found".to_string()))?;
-        let cf_hash_map = self.db.cf_handle(cf::BLOCK_HASH_TO_NUMBER)
-            .ok_or_else(|| StateError::DatabaseError("Column family BLOCK_HASH_TO_NUMBER not found".to_string()))?;
+        let cf_blocks = self.db.cf_handle(cf::BLOCKS).ok_or_else(|| {
+            StateError::DatabaseError("Column family BLOCKS not found".to_string())
+        })?;
+        let cf_hash_map = self.db.cf_handle(cf::BLOCK_HASH_TO_NUMBER).ok_or_else(|| {
+            StateError::DatabaseError("Column family BLOCK_HASH_TO_NUMBER not found".to_string())
+        })?;
 
         // Store block by number (key: block_number, value: block_data)
         let number_key = format!("block_{}", block.number);
-        self.db.put_cf(cf_blocks, number_key.as_bytes(), &block_data)
+        self.db
+            .put_cf(cf_blocks, number_key.as_bytes(), &block_data)
             .map_err(|e| StateError::DatabaseError(e.to_string()))?;
 
         // Store hash -> number mapping (hash as bytes)
-        self.db.put_cf(cf_hash_map, &block.hash, block.number.to_be_bytes())
+        self.db
+            .put_cf(cf_hash_map, block.hash, block.number.to_be_bytes())
             .map_err(|e| StateError::DatabaseError(e.to_string()))?;
 
         // Update chain height if this is the latest block
@@ -115,15 +117,21 @@ impl StateDB {
         debug!("Retrieving block with hash: {:?}", hash);
 
         // Get block number from hash
-        let cf_hash_map = self.db.cf_handle(cf::BLOCK_HASH_TO_NUMBER)
+        let cf_hash_map = self
+            .db
+            .cf_handle(cf::BLOCK_HASH_TO_NUMBER)
             .ok_or_else(|| StateError::DatabaseError("Column family not found".to_string()))?;
 
-        let number_bytes = self.db.get_cf(cf_hash_map, hash)
+        let number_bytes = self
+            .db
+            .get_cf(cf_hash_map, hash)
             .map_err(|e| StateError::DatabaseError(e.to_string()))?
             .ok_or_else(|| StateError::BlockNotFound(format!("{:?}", hash)))?;
 
-        let block_number = u64::from_be_bytes(number_bytes.try_into()
-            .map_err(|_| StateError::DatabaseError("Invalid block number format".to_string()))?);
+        let block_number =
+            u64::from_be_bytes(number_bytes.try_into().map_err(|_| {
+                StateError::DatabaseError("Invalid block number format".to_string())
+            })?);
 
         // Get block by number
         self.get_block_by_number(block_number)
@@ -133,11 +141,15 @@ impl StateDB {
     pub fn get_block_by_number(&self, number: u64) -> Result<Block> {
         debug!("Retrieving block #{}", number);
 
-        let cf_blocks = self.db.cf_handle(cf::BLOCKS)
+        let cf_blocks = self
+            .db
+            .cf_handle(cf::BLOCKS)
             .ok_or_else(|| StateError::DatabaseError("Column family not found".to_string()))?;
 
         let number_key = format!("block_{}", number);
-        let block_data = self.db.get_cf(cf_blocks, number_key.as_bytes())
+        let block_data = self
+            .db
+            .get_cf(cf_blocks, number_key.as_bytes())
             .map_err(|e| StateError::DatabaseError(e.to_string()))?
             .ok_or_else(|| StateError::BlockNotFound(number.to_string()))?;
 
@@ -158,20 +170,26 @@ impl StateDB {
         debug!("Storing transaction {:?}", tx.hash);
 
         // Serialize transaction
-        let tx_data = serde_json::to_vec(tx)
-            .map_err(|e| StateError::SerializationError(e.to_string()))?;
+        let tx_data =
+            serde_json::to_vec(tx).map_err(|e| StateError::SerializationError(e.to_string()))?;
 
-        let cf_txs = self.db.cf_handle(cf::TRANSACTIONS)
+        let cf_txs = self
+            .db
+            .cf_handle(cf::TRANSACTIONS)
             .ok_or_else(|| StateError::DatabaseError("Column family not found".to_string()))?;
-        let cf_tx_map = self.db.cf_handle(cf::TX_TO_BLOCK)
+        let cf_tx_map = self
+            .db
+            .cf_handle(cf::TX_TO_BLOCK)
             .ok_or_else(|| StateError::DatabaseError("Column family not found".to_string()))?;
 
         // Store transaction
-        self.db.put_cf(cf_txs, &tx.hash, &tx_data)
+        self.db
+            .put_cf(cf_txs, tx.hash, &tx_data)
             .map_err(|e| StateError::DatabaseError(e.to_string()))?;
 
         // Store tx -> block mapping
-        self.db.put_cf(cf_tx_map, &tx.hash, block_hash)
+        self.db
+            .put_cf(cf_tx_map, tx.hash, block_hash)
             .map_err(|e| StateError::DatabaseError(e.to_string()))?;
 
         Ok(())
@@ -181,10 +199,14 @@ impl StateDB {
     pub fn get_transaction(&self, tx_hash: &[u8; 32]) -> Result<Transaction> {
         debug!("Retrieving transaction {:?}", tx_hash);
 
-        let cf_txs = self.db.cf_handle(cf::TRANSACTIONS)
+        let cf_txs = self
+            .db
+            .cf_handle(cf::TRANSACTIONS)
             .ok_or_else(|| StateError::DatabaseError("Column family not found".to_string()))?;
 
-        let tx_data = self.db.get_cf(cf_txs, tx_hash)
+        let tx_data = self
+            .db
+            .get_cf(cf_txs, tx_hash)
             .map_err(|e| StateError::DatabaseError(e.to_string()))?
             .ok_or_else(|| StateError::TransactionNotFound(format!("{:?}", tx_hash)))?;
 
@@ -196,28 +218,37 @@ impl StateDB {
 
     /// Get block hash containing a transaction
     pub fn get_transaction_block(&self, tx_hash: &[u8; 32]) -> Result<[u8; 32]> {
-        let cf_tx_map = self.db.cf_handle(cf::TX_TO_BLOCK)
+        let cf_tx_map = self
+            .db
+            .cf_handle(cf::TX_TO_BLOCK)
             .ok_or_else(|| StateError::DatabaseError("Column family not found".to_string()))?;
 
-        let block_hash = self.db.get_cf(cf_tx_map, tx_hash)
+        let block_hash = self
+            .db
+            .get_cf(cf_tx_map, tx_hash)
             .map_err(|e| StateError::DatabaseError(e.to_string()))?
             .ok_or_else(|| StateError::TransactionNotFound(format!("{:?}", tx_hash)))?;
 
-        block_hash.try_into()
+        block_hash
+            .try_into()
             .map_err(|_| StateError::DatabaseError("Invalid block hash format".to_string()))
     }
 
     /// Get current chain height
     pub fn get_chain_height(&self) -> Result<u64> {
-        let cf_state = self.db.cf_handle(cf::CHAIN_STATE)
+        let cf_state = self
+            .db
+            .cf_handle(cf::CHAIN_STATE)
             .ok_or_else(|| StateError::DatabaseError("Column family not found".to_string()))?;
 
         match self.db.get_cf(cf_state, b"chain_height") {
             Ok(Some(bytes)) => {
-                let height = u64::from_be_bytes(bytes.try_into()
-                    .map_err(|_| StateError::DatabaseError("Invalid height format".to_string()))?);
+                let height =
+                    u64::from_be_bytes(bytes.try_into().map_err(|_| {
+                        StateError::DatabaseError("Invalid height format".to_string())
+                    })?);
                 Ok(height)
-            },
+            }
             Ok(None) => Ok(0), // Genesis state
             Err(e) => Err(StateError::DatabaseError(e.to_string())),
         }
@@ -228,10 +259,13 @@ impl StateDB {
         let current_height = self.get_chain_height()?;
 
         if new_height > current_height {
-            let cf_state = self.db.cf_handle(cf::CHAIN_STATE)
+            let cf_state = self
+                .db
+                .cf_handle(cf::CHAIN_STATE)
                 .ok_or_else(|| StateError::DatabaseError("Column family not found".to_string()))?;
 
-            self.db.put_cf(cf_state, b"chain_height", new_height.to_be_bytes())
+            self.db
+                .put_cf(cf_state, b"chain_height", new_height.to_be_bytes())
                 .map_err(|e| StateError::DatabaseError(e.to_string()))?;
 
             debug!("Updated chain height to {}", new_height);
@@ -242,11 +276,14 @@ impl StateDB {
 
     /// Store state root hash
     pub fn store_state_root(&self, block_number: u64, state_root: &str) -> Result<()> {
-        let cf_state = self.db.cf_handle(cf::CHAIN_STATE)
+        let cf_state = self
+            .db
+            .cf_handle(cf::CHAIN_STATE)
             .ok_or_else(|| StateError::DatabaseError("Column family not found".to_string()))?;
 
         let key = format!("state_root_{}", block_number);
-        self.db.put_cf(cf_state, key.as_bytes(), state_root.as_bytes())
+        self.db
+            .put_cf(cf_state, key.as_bytes(), state_root.as_bytes())
             .map_err(|e| StateError::DatabaseError(e.to_string()))?;
 
         Ok(())
@@ -254,16 +291,19 @@ impl StateDB {
 
     /// Get state root hash
     pub fn get_state_root(&self, block_number: u64) -> Result<String> {
-        let cf_state = self.db.cf_handle(cf::CHAIN_STATE)
+        let cf_state = self
+            .db
+            .cf_handle(cf::CHAIN_STATE)
             .ok_or_else(|| StateError::DatabaseError("Column family not found".to_string()))?;
 
         let key = format!("state_root_{}", block_number);
-        let root_bytes = self.db.get_cf(cf_state, key.as_bytes())
+        let root_bytes = self
+            .db
+            .get_cf(cf_state, key.as_bytes())
             .map_err(|e| StateError::DatabaseError(e.to_string()))?
-            .ok_or_else(|| StateError::KeyNotFound(key))?;
+            .ok_or(StateError::KeyNotFound(key))?;
 
-        String::from_utf8(root_bytes)
-            .map_err(|e| StateError::DatabaseError(e.to_string()))
+        String::from_utf8(root_bytes).map_err(|e| StateError::DatabaseError(e.to_string()))
     }
 
     /// Get all blocks in range
@@ -453,7 +493,9 @@ mod tests {
 
         let result = db.get_transaction(&nonexistent_hash);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), StateError::TransactionNotFound(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            StateError::TransactionNotFound(_)
+        ));
     }
 }
-

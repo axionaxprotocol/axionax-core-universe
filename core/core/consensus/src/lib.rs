@@ -63,7 +63,12 @@ impl ConsensusEngine {
     }
 
     /// Generates a PoPC challenge
-    pub fn generate_challenge(&self, job_id: String, output_size: usize, vrf_seed: [u8; 32]) -> Challenge {
+    pub fn generate_challenge(
+        &self,
+        job_id: String,
+        output_size: usize,
+        vrf_seed: [u8; 32],
+    ) -> Challenge {
         let sample_size = self.config.sample_size.min(output_size);
 
         // Generate deterministic samples using VRF seed
@@ -78,8 +83,18 @@ impl ConsensusEngine {
     }
 
     /// Verifies a proof against a challenge
-    pub fn verify_proof(&self, _challenge: &Challenge, _proof_data: &[u8]) -> bool {
-        // TODO: Implement Merkle proof verification
+    pub fn verify_proof(&self, challenge: &Challenge, proof_data: &[u8]) -> bool {
+        // Merkle proof verification:
+        // 1. Verify proof_data length matches sample_size
+        // 2. Reconstruct Merkle root from samples
+        // 3. Compare with expected root
+
+        if proof_data.len() < challenge.sample_size * 32 {
+            return false; // Invalid proof size
+        }
+
+        // For now, basic length validation
+        // Full implementation would verify Merkle tree structure
         true
     }
 
@@ -88,15 +103,20 @@ impl ConsensusEngine {
         1.0 - (1.0 - fraud_rate).powi(sample_size as i32)
     }
 
-    fn generate_samples(&self, output_size: usize, sample_size: usize, seed: &[u8; 32]) -> Vec<usize> {
-        use sha3::{Sha3_256, Digest};
+    fn generate_samples(
+        &self,
+        output_size: usize,
+        sample_size: usize,
+        seed: &[u8; 32],
+    ) -> Vec<usize> {
+        use sha3::{Digest, Sha3_256};
 
         let mut samples = Vec::with_capacity(sample_size);
         let mut hasher = Sha3_256::new();
 
         for i in 0..sample_size {
             hasher.update(seed);
-            hasher.update(&i.to_le_bytes());
+            hasher.update(i.to_le_bytes());
             let hash = hasher.finalize_reset();
 
             let index = u64::from_le_bytes(hash[0..8].try_into().unwrap()) as usize % output_size;
@@ -111,10 +131,10 @@ impl Default for ConsensusConfig {
     fn default() -> Self {
         Self {
             sample_size: 1000,              // Recommended: 600-1500 (ARCHITECTURE v1.5)
-            min_confidence: 0.99,            // 99%+ required detection probability
-            fraud_window_blocks: 720,        // ~3600s @ 5s/block (Δt_fraud)
-            min_validator_stake: 1_000_000,  // Minimum stake requirement
-            false_pass_penalty_bps: 500,     // 5% (≥500 bps per ARCHITECTURE v1.5)
+            min_confidence: 0.99,           // 99%+ required detection probability
+            fraud_window_blocks: 720,       // ~3600s @ 5s/block (Δt_fraud)
+            min_validator_stake: 1_000_000, // Minimum stake requirement
+            false_pass_penalty_bps: 500,    // 5% (≥500 bps per ARCHITECTURE v1.5)
         }
     }
 }
@@ -149,11 +169,7 @@ mod tests {
     #[test]
     fn test_generate_challenge() {
         let engine = ConsensusEngine::new(ConsensusConfig::default());
-        let challenge = engine.generate_challenge(
-            "job-123".to_string(),
-            10000,
-            [1u8; 32],
-        );
+        let challenge = engine.generate_challenge("job-123".to_string(), 10000, [1u8; 32]);
 
         assert_eq!(challenge.job_id, "job-123");
         assert_eq!(challenge.samples.len(), 1000);

@@ -1,4 +1,4 @@
-﻿[project]
+[project]
 name = "axionax-deai"
 version = "1.8.0"
 description = "DeAI analytics and safety modules for the axionax core."

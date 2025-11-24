@@ -4,8 +4,7 @@ use libp2p::{
     gossipsub::{self, IdentTopic, MessageAuthenticity, ValidationMode},
     identify,
     kad::{self, store::MemoryStore},
-    mdns,
-    ping,
+    mdns, ping,
     swarm::NetworkBehaviour,
     PeerId,
 };
@@ -15,7 +14,7 @@ use crate::config::NetworkConfig;
 
 /// axionax network behaviour combining multiple libp2p protocols
 #[derive(NetworkBehaviour)]
-pub struct axionaxBehaviour {
+pub struct AxionaxBehaviour {
     /// Gossipsub for message propagation
     pub gossipsub: gossipsub::Behaviour,
     /// mDNS for local peer discovery
@@ -28,9 +27,12 @@ pub struct axionaxBehaviour {
     pub ping: ping::Behaviour,
 }
 
-impl axionaxBehaviour {
+impl AxionaxBehaviour {
     /// Create new network behaviour
-    pub fn new(peer_id: PeerId, config: &NetworkConfig) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(
+        peer_id: PeerId,
+        config: &NetworkConfig,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         // Configure Gossipsub
         let gossipsub_config = gossipsub::ConfigBuilder::default()
             .heartbeat_interval(Duration::from_secs(1))
@@ -51,17 +53,12 @@ impl axionaxBehaviour {
             .build()?;
 
         let gossipsub = gossipsub::Behaviour::new(
-            MessageAuthenticity::Signed(
-                libp2p::identity::Keypair::generate_ed25519()
-            ),
+            MessageAuthenticity::Signed(libp2p::identity::Keypair::generate_ed25519()),
             gossipsub_config,
         )?;
 
         // Configure mDNS for local discovery
-        let mdns = mdns::tokio::Behaviour::new(
-            mdns::Config::default(),
-            peer_id,
-        )?;
+        let mdns = mdns::tokio::Behaviour::new(mdns::Config::default(), peer_id)?;
 
         // Configure Kademlia DHT
         let mut kad_config = kad::Config::default();
@@ -104,7 +101,11 @@ impl axionaxBehaviour {
     }
 
     /// Publish message to a topic
-    pub fn publish(&mut self, topic: &str, data: Vec<u8>) -> Result<gossipsub::MessageId, gossipsub::PublishError> {
+    pub fn publish(
+        &mut self,
+        topic: &str,
+        data: Vec<u8>,
+    ) -> Result<gossipsub::MessageId, gossipsub::PublishError> {
         let topic = IdentTopic::new(topic);
         self.gossipsub.publish(topic, data)
     }
@@ -116,7 +117,10 @@ impl axionaxBehaviour {
 
     /// Get list of connected peers
     pub fn connected_peers(&self) -> Vec<&PeerId> {
-        self.gossipsub.all_peers().map(|(peer_id, _)| peer_id).collect()
+        self.gossipsub
+            .all_peers()
+            .map(|(peer_id, _)| peer_id)
+            .collect()
     }
 
     /// Get number of connected peers
@@ -136,7 +140,7 @@ mod tests {
         let peer_id = PeerId::from(keypair.public());
         let config = NetworkConfig::dev();
 
-        let behaviour = axionaxBehaviour::new(peer_id, &config);
+        let behaviour = AxionaxBehaviour::new(peer_id, &config);
         assert!(behaviour.is_ok());
     }
 }
