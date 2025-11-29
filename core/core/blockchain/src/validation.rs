@@ -84,7 +84,7 @@ impl Default for ValidationConfig {
         Self {
             max_block_size: 1_048_576, // 1 MB
             max_transactions_per_block: 10_000,
-            max_timestamp_drift: 15,      // 15 seconds
+            max_timestamp_drift: 15, // 15 seconds
             min_gas_price: 1_000_000_000, // 1 Gwei
             block_gas_limit: 30_000_000,
             min_transaction_gas: 21_000,
@@ -333,12 +333,8 @@ mod tests {
     fn create_valid_block(number: u64) -> Block {
         Block {
             number,
-            hash: [number as u8 + 1; 32], // Unique hash for each block
-            parent_hash: if number > 0 {
-                [number as u8; 32]
-            } else {
-                [0u8; 32]
-            }, // Match parent's hash
+            hash: [number as u8 + 1; 32],  // Unique hash for each block
+            parent_hash: if number > 0 { [number as u8; 32] } else { [0u8; 32] },  // Match parent's hash
             timestamp: 1700000000,
             proposer: "0x1234567890123456789012345678901234567890".to_string(),
             transactions: vec![],
@@ -390,14 +386,11 @@ mod tests {
         let config = ValidationConfig::default();
         let validator = BlockValidator::new(config);
 
-        let block = create_valid_block(5); // Wrong number
+        let mut block = create_valid_block(5); // Wrong number
         let parent = create_valid_block(0);
 
         let result = validator.validate_block(&block, Some(&parent));
-        assert!(matches!(
-            result,
-            Err(ValidationError::InvalidBlockNumber { .. })
-        ));
+        assert!(matches!(result, Err(ValidationError::InvalidBlockNumber { .. })));
     }
 
     #[test]
@@ -431,10 +424,7 @@ mod tests {
         tx.gas_limit = 1000; // Too low
 
         let result = validator.validate_transaction(&tx);
-        assert!(matches!(
-            result,
-            Err(ValidationError::InsufficientGas { .. })
-        ));
+        assert!(matches!(result, Err(ValidationError::InsufficientGas { .. })));
     }
 
     #[test]
@@ -446,10 +436,7 @@ mod tests {
         tx.gas_price = 100; // Too low
 
         let result = validator.validate_transaction(&tx);
-        assert!(matches!(
-            result,
-            Err(ValidationError::InvalidGasPrice { .. })
-        ));
+        assert!(matches!(result, Err(ValidationError::InvalidGasPrice { .. })));
     }
 
     #[test]
@@ -458,35 +445,25 @@ mod tests {
         let validator = TransactionValidator::new(config);
 
         // Valid address
-        assert!(validator
-            .validate_address("0x1234567890123456789012345678901234567890")
-            .is_ok());
+        assert!(validator.validate_address("0x1234567890123456789012345678901234567890").is_ok());
 
         // Invalid: no 0x prefix
-        assert!(validator
-            .validate_address("1234567890123456789012345678901234567890")
-            .is_err());
+        assert!(validator.validate_address("1234567890123456789012345678901234567890").is_err());
 
         // Invalid: zero address
-        assert!(validator
-            .validate_address("0x0000000000000000000000000000000000000000")
-            .is_err());
+        assert!(validator.validate_address("0x0000000000000000000000000000000000000000").is_err());
 
         // Invalid: wrong length
         assert!(validator.validate_address("0x1234").is_err());
 
         // Invalid: non-hex characters
-        assert!(validator
-            .validate_address("0xZZZZ567890123456789012345678901234567890")
-            .is_err());
+        assert!(validator.validate_address("0xZZZZ567890123456789012345678901234567890").is_err());
     }
 
     #[test]
     fn test_block_too_many_transactions() {
-        let config = ValidationConfig {
-            max_transactions_per_block: 2,
-            ..Default::default()
-        };
+        let mut config = ValidationConfig::default();
+        config.max_transactions_per_block = 2;
         let validator = BlockValidator::new(config);
 
         let mut block = create_valid_block(1);
@@ -497,10 +474,7 @@ mod tests {
         ];
 
         let result = validator.validate_transactions(&block);
-        assert!(matches!(
-            result,
-            Err(ValidationError::TooManyTransactions { .. })
-        ));
+        assert!(matches!(result, Err(ValidationError::TooManyTransactions { .. })));
     }
 
     #[test]
@@ -513,9 +487,6 @@ mod tests {
         block.gas_limit = 40_000_000;
 
         let result = validator.validate_gas(&block);
-        assert!(matches!(
-            result,
-            Err(ValidationError::GasLimitExceeded { .. })
-        ));
+        assert!(matches!(result, Err(ValidationError::GasLimitExceeded { .. })));
     }
 }

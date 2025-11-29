@@ -13,8 +13,9 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing::info;
 
-use blockchain::{Block, Transaction};
+use blockchain::{Block, Transaction, TransactionPool};
 use state::StateDB;
+use tokio::sync::RwLock;
 
 pub mod health;
 pub mod middleware;
@@ -152,18 +153,29 @@ pub trait AxionaxRpc {
     /// Net version (chain ID as string)
     #[method(name = "net_version")]
     async fn net_version(&self) -> RpcResult<String>;
+
+    /// Send raw transaction
+    #[method(name = "eth_sendRawTransaction")]
+    async fn send_raw_transaction(&self, tx_hex: String) -> RpcResult<String>;
 }
 
 /// RPC server implementation
 pub struct AxionaxRpcServerImpl {
     state: Arc<StateDB>,
+    mempool: Option<Arc<TransactionPool>>, // Optional for now to avoid breaking tests/other uses
     chain_id: u64,
 }
 
 impl AxionaxRpcServerImpl {
     /// Create new RPC server
     pub fn new(state: Arc<StateDB>, chain_id: u64) -> Self {
-        Self { state, chain_id }
+        Self { state, mempool: None, chain_id }
+    }
+
+    /// Set mempool
+    pub fn with_mempool(mut self, mempool: Arc<TransactionPool>) -> Self {
+        self.mempool = Some(mempool);
+        self
     }
 }
 
@@ -228,6 +240,36 @@ impl AxionaxRpcServer for AxionaxRpcServerImpl {
     async fn net_version(&self) -> RpcResult<String> {
         Ok(self.chain_id.to_string())
     }
+
+    async fn send_raw_transaction(&self, tx_hex: String) -> RpcResult<String> {
+        let mempool = self.mempool.as_ref().ok_or_else(|| {
+            RpcError::InternalError("Mempool not available".to_string())
+        })?;
+
+        // 1. Decode hex to bytes
+        let bytes = hex::decode(tx_hex.strip_prefix("0x").unwrap_or(&tx_hex))
+            .map_err(|e| RpcError::InvalidParams(format!("Invalid hex: {}", e)))?;
+
+        // 2. Deserialize bytes to Transaction (Assuming JSON encoded in bytes for now as simpler protocol)
+        // In real Ethereum this is RLP. Here we use serde_json for simplicity of implementation in this phase.
+        let tx: Transaction = serde_json::from_slice(&bytes)
+            .map_err(|e| RpcError::InvalidParams(format!("Invalid transaction format: {}", e)))?;
+        
+        // TODO: Verify signature here. 
+        // Current Transaction struct doesn't have signature. 
+        // We assume the node trusts the connection or the payload includes signature in a wrapper (SignedTransaction)
+        // But TransactionPool expects Transaction.
+        // For Phase 1 Faucet support, we accept unsigned Transaction payload.
+        
+        let tx_hash = format!("0x{}", hex::encode(tx.hash));
+
+        // 3. Add to mempool
+        mempool.add_transaction(tx)
+            .await
+            .map_err(|e| RpcError::InternalError(e.to_string()))?;
+
+        Ok(tx_hash)
+    }
 }
 
 /// Start RPC server
@@ -235,12 +277,17 @@ pub async fn start_rpc_server(
     addr: SocketAddr,
     state: Arc<StateDB>,
     chain_id: u64,
+    mempool: Option<Arc<TransactionPool>>,
 ) -> anyhow::Result<ServerHandle> {
     info!("Starting RPC server on {}", addr);
 
     let server = Server::builder().build(addr).await?;
 
-    let rpc_impl = AxionaxRpcServerImpl::new(state, chain_id);
+    let mut rpc_impl = AxionaxRpcServerImpl::new(state, chain_id);
+    if let Some(pool) = mempool {
+        rpc_impl = rpc_impl.with_mempool(pool);
+    }
+    
     let handle = server.start(rpc_impl.into_rpc());
 
     info!("RPC server started successfully");

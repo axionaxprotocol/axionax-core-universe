@@ -8,7 +8,8 @@ members = [
     "core/rpc",
     "core/node",
     "core/config",
-    "bridge/rust-python"
+    "bridge/rust-python",
+    "tools/faucet"
 ]
 
 resolver = "2"

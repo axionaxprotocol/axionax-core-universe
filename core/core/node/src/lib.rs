@@ -4,27 +4,24 @@
 //! that handles peer-to-peer networking, persistent storage, and JSON-RPC API endpoints.
 
 use std::net::SocketAddr;
-use std::path::Path;
 use std::sync::Arc;
-use tokio::sync::{mpsc, Mutex, RwLock};
+use std::path::Path;
+use tokio::sync::{mpsc, RwLock};
 use tokio::task::JoinHandle;
-use tracing::{debug, error, info, warn};
+use tracing::{info, warn, error, debug};
 
-use blockchain::{Block, Transaction};
-use jsonrpsee::server::ServerHandle;
+use blockchain::{Block, Transaction, TransactionPool, PoolConfig, ValidationConfig};
+use network::{NetworkManager, NetworkConfig, NetworkMessage};
 use network::protocol::{BlockMessage, TransactionMessage};
-use network::{NetworkConfig, NetworkManager, NetworkMessage};
-use rpc::start_rpc_server;
 use state::StateDB;
+use rpc::start_rpc_server;
+use jsonrpsee::server::ServerHandle;
 
 /// Convert hex string to [u8; 32] hash
 fn hex_to_hash(hex: &str) -> Result<[u8; 32], String> {
     let hex = hex.strip_prefix("0x").unwrap_or(hex);
     if hex.len() != 64 {
-        return Err(format!(
-            "Invalid hash length: expected 64, got {}",
-            hex.len()
-        ));
+        return Err(format!("Invalid hash length: expected 64, got {}", hex.len()));
     }
     let bytes = hex::decode(hex).map_err(|e| e.to_string())?;
     let mut hash = [0u8; 32];
@@ -90,8 +87,9 @@ pub struct NodeStats {
 /// axionax blockchain node
 pub struct AxionaxNode {
     config: NodeConfig,
-    network: Arc<Mutex<NetworkManager>>,
+    network: Arc<RwLock<NetworkManager>>,
     state: Arc<StateDB>,
+    mempool: Arc<TransactionPool>,
     stats: Arc<RwLock<NodeStats>>,
     rpc_handle: Option<ServerHandle>,
     sync_handle: Option<JoinHandle<()>>,
@@ -111,10 +109,17 @@ impl AxionaxNode {
         info!("State database opened at: {}", config.state_path);
 
         // Initialize network manager
-        let network = Arc::new(Mutex::new(
-            NetworkManager::new(config.network.clone()).await?,
+        let network = Arc::new(RwLock::new(
+            NetworkManager::new(config.network.clone()).await?
         ));
         info!("Network manager initialized");
+
+        // Initialize transaction pool
+        let mempool = Arc::new(TransactionPool::new(
+            PoolConfig::default(),
+            ValidationConfig::default(),
+        ));
+        info!("Transaction pool initialized");
 
         // Initialize statistics
         let stats = Arc::new(RwLock::new(NodeStats::default()));
@@ -123,6 +128,7 @@ impl AxionaxNode {
             config,
             network,
             state,
+            mempool,
             stats,
             rpc_handle: None,
             sync_handle: None,
@@ -135,7 +141,7 @@ impl AxionaxNode {
 
         // Start network manager
         {
-            let mut network = self.network.lock().await;
+            let mut network = self.network.write().await;
             network.start().await?;
         }
         info!("Network layer started");
@@ -150,8 +156,8 @@ impl AxionaxNode {
             self.config.rpc_addr,
             self.state.clone(),
             self.config.network.chain_id,
-        )
-        .await?;
+            Some(self.mempool.clone()),
+        ).await?;
         self.rpc_handle = Some(rpc_handle);
         info!("RPC server started on {}", self.config.rpc_addr);
 
@@ -266,11 +272,7 @@ impl AxionaxNode {
 
         // Store block
         state.store_block(&block)?;
-        info!(
-            "✅ Stored block #{} (hash: {})",
-            block.number,
-            hex::encode(&block.hash[..8])
-        );
+        info!("✅ Stored block #{} (hash: {})", block.number, hex::encode(&block.hash[..8]));
 
         // Update stats
         {
@@ -284,14 +286,11 @@ impl AxionaxNode {
     /// Calculate total gas used by transactions
     fn calculate_gas_used(transactions: &[Transaction]) -> u64 {
         // Simple gas calculation: 21000 base + 68 per data byte
-        transactions
-            .iter()
-            .map(|tx| {
-                let base_gas = 21_000u64;
-                let data_gas = tx.data.len() as u64 * 68;
-                base_gas + data_gas
-            })
-            .sum()
+        transactions.iter().map(|tx| {
+            let base_gas = 21_000u64;
+            let data_gas = tx.data.len() as u64 * 68;
+            base_gas + data_gas
+        }).sum()
     }
 
     /// Handle incoming transaction message from network
@@ -309,8 +308,8 @@ impl AxionaxNode {
         }
 
         // Convert hash from hex string to [u8; 32]
-        let hash =
-            hex_to_hash(&tx_msg.hash).map_err(|e| anyhow::anyhow!("Invalid tx hash: {}", e))?;
+        let hash = hex_to_hash(&tx_msg.hash)
+            .map_err(|e| anyhow::anyhow!("Invalid tx hash: {}", e))?;
 
         // Check if we already have this transaction
         if state.get_transaction(&hash).is_ok() {
@@ -319,13 +318,13 @@ impl AxionaxNode {
         }
 
         // Convert TransactionMessage to Transaction
-        let _tx = Transaction {
+        let tx = Transaction {
             hash,
             from: tx_msg.from,
             to: tx_msg.to,
             value: tx_msg.value as u128, // Convert u64 -> u128
-            gas_price: 20,               // Default gas price (not in TransactionMessage)
-            gas_limit: 21000,            // Default gas limit (not in TransactionMessage)
+            gas_price: 20, // Default gas price (not in TransactionMessage)
+            gas_limit: 21000, // Default gas limit (not in TransactionMessage)
             nonce: tx_msg.nonce,
             data: tx_msg.data,
         };
@@ -334,6 +333,7 @@ impl AxionaxNode {
         // For now, we'll just track that we received them
         // In a full implementation, we'd store them in a mempool
 
+        let _ = tx; // Silence unused variable warning
         debug!("Transaction received (pending block inclusion)");
 
         // Update stats
@@ -356,15 +356,13 @@ impl AxionaxNode {
             parent_hash: hash_to_hex(&block.parent_hash),
             timestamp: block.timestamp,
             proposer: block.proposer.clone(),
-            transactions: block
-                .transactions
-                .iter()
+            transactions: block.transactions.iter()
                 .map(|tx| hash_to_hex(&tx.hash))
                 .collect(),
             state_root: hash_to_hex(&block.state_root),
         };
 
-        let mut network = self.network.lock().await;
+        let mut network = self.network.write().await;
         network.publish(NetworkMessage::Block(block_msg))?;
 
         Ok(())
@@ -372,10 +370,7 @@ impl AxionaxNode {
 
     /// Publish a transaction to the network
     pub async fn publish_transaction(&self, tx: &Transaction) -> anyhow::Result<()> {
-        debug!(
-            "Publishing transaction to network: {}",
-            hex::encode(&tx.hash[..8])
-        );
+        debug!("Publishing transaction to network: {}", hex::encode(&tx.hash[..8]));
 
         // Convert Transaction to TransactionMessage (with hex-encoded hash)
         let tx_msg = TransactionMessage {
@@ -388,7 +383,7 @@ impl AxionaxNode {
             signature: vec![], // TODO: Extract signature from transaction data when ECDSA is implemented
         };
 
-        let mut network = self.network.lock().await;
+        let mut network = self.network.write().await;
         network.publish(NetworkMessage::Transaction(tx_msg))?;
 
         Ok(())
@@ -401,7 +396,7 @@ impl AxionaxNode {
 
     /// Get current peer count
     pub async fn peer_count(&self) -> usize {
-        let network = self.network.lock().await;
+        let network = self.network.read().await;
         network.peer_count()
     }
 
@@ -428,7 +423,7 @@ impl AxionaxNode {
 
         // Stop network (note: NetworkManager doesn't have shutdown method yet)
         // {
-        //     let mut network = self.network.lock().await;
+        //     let mut network = self.network.write().await;
         //     // network.shutdown().await?;
         //     info!("Network layer stopped");
         // }

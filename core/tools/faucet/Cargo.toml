@@ -1,0 +1,24 @@
+[package]
+name = "axionax-faucet"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.7"
+tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+reqwest = { version = "0.11", features = ["json"] }
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+hex = "0.4"
+dotenv = "0.15"
+anyhow = "1.0"
+lazy_static = "1.4"
+dashmap = "5.5" # For rate limiting
+ed25519-dalek = "2.1"
+
+# Internal dependencies
+crypto = { path = "../../core/crypto" }
+blockchain = { path = "../../core/blockchain" }
