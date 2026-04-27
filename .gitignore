@@ -42,3 +42,6 @@ axionax-node-package.zip
 # Local node state and test artifacts
 .local-node-state/
 .rpc-test.json
+
+# Local node deployment artifacts (binaries, scratch test scripts)
+tmp_node_transfer/
